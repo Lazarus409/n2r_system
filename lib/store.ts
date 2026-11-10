@@ -1,83 +1,133 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
-import type { Alumnus, RegistrationInput } from "./types";
+import { db } from "./db";
+import type { Alumnus, AuditEntry, RegistrationInput } from "./types";
 
-/**
- * Records are kept in a JSON file on the server (data/alumni.json).
- * Fine for a single server or a VPS. To deploy on a host with a read-only filesystem (e.g. Vercel),
- * swap these functions for a database; nothing else in the app needs to change.
- */
-const FILE = path.join(process.cwd(), "data", "alumni.json");
+type Row = {
+  id: string; name: string; gender: string; year: number; prog: string; phone: string; email: string;
+  region: string; city: string; employer: string; title: string; industry: string; chapter: string;
+  verified: number; submitted_at: string; verified_at: string | null; updated_at: string | null; notes: string; sample: number;
+};
 
-let queue: Promise<unknown> = Promise.resolve();
-/** Serialise all read-modify-write operations so two simultaneous registrations can't overwrite each other. */
-function locked<T>(fn: () => Promise<T>): Promise<T> {
-  const run = queue.then(fn, fn);
-  queue = run.catch(() => undefined);
-  return run;
+const toAlumnus = (r: Row): Alumnus => ({
+  id: r.id, name: r.name, gender: r.gender, year: r.year, prog: r.prog, phone: r.phone, email: r.email,
+  region: r.region, city: r.city, employer: r.employer, title: r.title, industry: r.industry, chapter: r.chapter,
+  consent: true, verified: !!r.verified, submittedAt: r.submitted_at, verifiedAt: r.verified_at,
+  updatedAt: r.updated_at, notes: r.notes, sample: !!r.sample || undefined,
+});
+
+const now = () => new Date().toISOString();
+
+function audit(actor: string, action: string, recordId: string | null, summary: string) {
+  db().prepare("INSERT INTO audit_log (at, actor, action, record_id, summary) VALUES (?,?,?,?,?)").run(now(), actor, action, recordId, summary);
 }
 
-async function readAll(): Promise<Alumnus[]> {
-  try {
-    return JSON.parse(await fs.readFile(FILE, "utf8"));
-  } catch (e: unknown) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw e;
-  }
+export function listAlumni(): Alumnus[] {
+  return (db().prepare("SELECT * FROM alumni ORDER BY submitted_at DESC").all() as Row[]).map(toAlumnus);
 }
 
-async function writeAll(list: Alumnus[]) {
-  await fs.mkdir(path.dirname(FILE), { recursive: true });
-  const tmp = FILE + ".tmp";
-  await fs.writeFile(tmp, JSON.stringify(list, null, 2));
-  await fs.rename(tmp, FILE); // atomic replace, so a crash never leaves a half-written file
-}
-
-const key = (a: { name: string; year: number }) => a.name.toLowerCase() + "|" + a.year;
-
-export function listAlumni() {
-  return locked(readAll);
+export function getAlumnus(id: string): Alumnus | null {
+  const r = db().prepare("SELECT * FROM alumni WHERE id = ?").get(id) as Row | undefined;
+  return r ? toAlumnus(r) : null;
 }
 
 export type AddResult = { status: "created" | "updated"; record: Alumnus } | { status: "duplicate" };
 
 /** Adds a registration. A repeat from the same person (name + year group) updates their record while it is still unverified. */
-export function addAlumnus(input: RegistrationInput): Promise<AddResult> {
-  return locked(async () => {
-    const list = await readAll();
-    const existing = list.find((a) => key(a) === key(input));
-    const now = new Date().toISOString();
+export function addAlumnus(v: RegistrationInput): AddResult {
+  const d = db();
+  return d.transaction((): AddResult => {
+    const key = v.name.toLowerCase();
+    const existing = d.prepare("SELECT * FROM alumni WHERE name_key = ? AND year = ?").get(key, v.year) as Row | undefined;
+    const fields = { name: v.name, name_key: key, gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
+      region: v.region, city: v.city, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter };
     if (existing) {
-      if (existing.verified) return { status: "duplicate" as const };
-      Object.assign(existing, { ...input, consent: true, submittedAt: now });
-      await writeAll(list);
-      return { status: "updated" as const, record: existing };
+      if (existing.verified) return { status: "duplicate" };
+      d.prepare(`UPDATE alumni SET name=@name, name_key=@name_key, gender=@gender, prog=@prog, phone=@phone, email=@email, region=@region,
+        city=@city, employer=@employer, title=@title, industry=@industry, chapter=@chapter, submitted_at=@at, updated_at=@at WHERE id=@id`)
+        .run({ ...fields, at: now(), id: existing.id });
+      audit("member", "registration.updated", existing.id, `${v.name} (${v.year}) resubmitted their details`);
+      return { status: "updated", record: getAlumnus(existing.id)! };
     }
-    const record: Alumnus = { ...input, consent: true, id: randomUUID(), verified: false, submittedAt: now };
-    list.push(record);
-    await writeAll(list);
-    return { status: "created" as const, record };
-  });
+    const id = randomUUID();
+    d.prepare(`INSERT INTO alumni (id,name,name_key,gender,year,prog,phone,email,region,city,employer,title,industry,chapter,consent,verified,submitted_at)
+      VALUES (@id,@name,@name_key,@gender,@year,@prog,@phone,@email,@region,@city,@employer,@title,@industry,@chapter,1,0,@at)`)
+      .run({ ...fields, id, at: now() });
+    audit("member", "registration.created", id, `${v.name} (${v.year}) registered`);
+    return { status: "created", record: getAlumnus(id)! };
+  })();
 }
 
-export function setVerified(id: string, verified: boolean) {
-  return locked(async () => {
-    const list = await readAll();
-    const a = list.find((x) => x.id === id);
-    if (!a) return null;
-    a.verified = verified;
-    a.verifiedAt = verified ? new Date().toISOString() : undefined;
-    await writeAll(list);
-    return a;
-  });
+/** Admin edit of a record's details and/or internal notes. Returns null if not found, "conflict" if it would duplicate another person. */
+export function updateAlumnus(id: string, v: RegistrationInput | null, notes?: string): Alumnus | null | "conflict" {
+  const d = db();
+  return d.transaction(() => {
+    const cur = getAlumnus(id);
+    if (!cur) return null;
+    if (v) {
+      const clash = d.prepare("SELECT id FROM alumni WHERE name_key = ? AND year = ? AND id != ?").get(v.name.toLowerCase(), v.year, id);
+      if (clash) return "conflict" as const;
+      const changed = (Object.keys(v) as (keyof RegistrationInput)[]).filter((k) => k !== "consent" && String(cur[k as keyof Alumnus]) !== String(v[k]));
+      d.prepare(`UPDATE alumni SET name=@name, name_key=@name_key, gender=@gender, year=@year, prog=@prog, phone=@phone, email=@email, region=@region,
+        city=@city, employer=@employer, title=@title, industry=@industry, chapter=@chapter, updated_at=@at WHERE id=@id`)
+        .run({ name: v.name, name_key: v.name.toLowerCase(), gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
+          region: v.region, city: v.city, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter, at: now(), id });
+      if (changed.length) audit("admin", "record.edited", id, `Edited ${v.name}: ${changed.join(", ")}`);
+    }
+    if (notes !== undefined && notes !== cur.notes) {
+      d.prepare("UPDATE alumni SET notes = ?, updated_at = ? WHERE id = ?").run(notes.slice(0, 2000), now(), id);
+      audit("admin", "record.notes", id, `Updated notes for ${v?.name ?? cur.name}`);
+    }
+    return getAlumnus(id);
+  })();
 }
 
-export function deleteAlumni(ids: string[]) {
-  return locked(async () => {
-    const list = await readAll();
-    const keep = list.filter((a) => !ids.includes(a.id));
-    await writeAll(keep);
-    return list.length - keep.length;
-  });
+export function setVerified(ids: string[], verified: boolean): number {
+  const d = db();
+  return d.transaction(() => {
+    let n = 0;
+    const at = verified ? now() : null;
+    for (const id of ids) {
+      const r = d.prepare("UPDATE alumni SET verified = ?, verified_at = ?, updated_at = ? WHERE id = ? AND verified != ?")
+        .run(verified ? 1 : 0, at, now(), id, verified ? 1 : 0);
+      if (r.changes) {
+        n++;
+        const a = getAlumnus(id);
+        audit("admin", verified ? "record.verified" : "record.unverified", id, `${verified ? "Verified" : "Marked unverified"}: ${a?.name}`);
+      }
+    }
+    return n;
+  })();
+}
+
+export function deleteAlumni(ids: string[]): number {
+  const d = db();
+  return d.transaction(() => {
+    let n = 0;
+    for (const id of ids) {
+      const a = getAlumnus(id);
+      if (!a) continue;
+      d.prepare("DELETE FROM alumni WHERE id = ?").run(id);
+      if (!a.sample) audit("admin", "record.deleted", id, `Deleted ${a.name} (${a.year})`);
+      n++;
+    }
+    return n;
+  })();
+}
+
+export function deleteSamples(): number {
+  const n = db().prepare("DELETE FROM alumni WHERE sample = 1").run().changes;
+  if (n) audit("admin", "samples.removed", null, `Removed ${n} sample records`);
+  return n;
+}
+
+export function recordLogin(ok: boolean, ip: string) {
+  audit("admin", ok ? "auth.login" : "auth.failed", null, ok ? "Signed in" : `Failed sign-in attempt from ${ip}`);
+}
+
+export function listAudit(limit = 200): AuditEntry[] {
+  return (db().prepare("SELECT id, at, actor, action, record_id recordId, summary FROM audit_log ORDER BY id DESC LIMIT ?").all(limit)) as AuditEntry[];
+}
+
+export function healthCheck(): boolean {
+  return (db().prepare("SELECT 1 ok").get() as { ok: number }).ok === 1;
 }

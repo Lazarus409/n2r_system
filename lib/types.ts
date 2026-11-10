@@ -14,11 +14,24 @@ export interface RegistrationInput {
   consent: boolean;
 }
 
+export type RegistrationField = keyof RegistrationInput;
+
 export interface Alumnus extends Omit<RegistrationInput, "consent"> {
   id: string;
   verified: boolean;
   consent: true;
   submittedAt: string;
-  verifiedAt?: string;
+  verifiedAt?: string | null;
+  updatedAt?: string | null;
+  notes: string;
   sample?: boolean;
+}
+
+export interface AuditEntry {
+  id: number;
+  at: string;
+  actor: string;
+  action: string;
+  recordId: string | null;
+  summary: string;
 }

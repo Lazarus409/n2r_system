@@ -1,119 +1,102 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Brand from "@/app/Brand";
-import { INDUSTRIES, REGIONS, yearGroups } from "@/lib/constants";
+import ThemeToggle from "@/app/ThemeToggle";
+import { IconActivity, IconAlert, IconChart, IconList, IconLogout, IconSparkle, IconX } from "@/app/components/Icons";
 import type { Alumnus } from "@/lib/types";
+import Directory from "./_components/Directory";
+import RecordDrawer from "./_components/RecordDrawer";
+import Reports from "./_components/Reports";
+import Activity from "./_components/Activity";
+import { useToasts } from "./_components/Toasts";
+import { useConfirm } from "./_components/Confirm";
+import { api } from "./_components/util";
 
-type Tab = "dir" | "rep";
-type SortKey = "name" | "year" | "prog" | "region" | "employer" | "phone" | "chapter" | "verified" | "submittedAt";
-
-const COLS: [SortKey, string][] = [
-  ["name", "Name"], ["year", "Year"], ["prog", "Programme"], ["region", "Location"],
-  ["employer", "Work"], ["phone", "Contact"], ["chapter", "Chapter"], ["verified", "Status"],
-];
+type Tab = "dir" | "rep" | "act";
 const POLL_MS = 15000;
 const SEEN_KEY = "nar.lastSeen";
 
-function readSeen() {
-  try { return localStorage.getItem(SEEN_KEY) || ""; } catch { return ""; }
-}
-function writeSeen(v: string) {
-  try { localStorage.setItem(SEEN_KEY, v); } catch { /* ignore */ }
-}
+const readSeen = () => { try { return localStorage.getItem(SEEN_KEY) || ""; } catch { return ""; } };
+const writeSeen = (v: string) => { try { localStorage.setItem(SEEN_KEY, v); } catch { /* ignore */ } };
 
 export default function AdminPage() {
   const [data, setData] = useState<Alumnus[] | null>(null);
   const [loadError, setLoadError] = useState("");
   const [tab, setTab] = useState<Tab>("dir");
-  const [q, setQ] = useState("");
-  const [fy, setFy] = useState("");
-  const [fr, setFr] = useState("");
-  const [fi, setFi] = useState("");
-  const [status, setStatus] = useState("");
-  const [sort, setSort] = useState<{ k: SortKey; d: 1 | -1 }>({ k: "submittedAt", d: -1 });
-  const [seen, setSeen] = useState<string | null>(null); // timestamp of the newest record the admin has already seen
-  const [copied, setCopied] = useState(false);
-  const [registerUrl, setRegisterUrl] = useState("/register");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [seen, setSeen] = useState("");
+  const [toasts, toast] = useToasts();
+  const [dialog, confirm] = useConfirm();
+  const known = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/alumni", { cache: "no-store" });
-      if (res.status === 401) {
-        window.location.href = "/login?next=/admin"; // session expired
-        return;
+      const list = await api<Alumnus[]>("/api/alumni");
+      // Announce registrations that arrive while the dashboard is open
+      if (known.current) {
+        const fresh = list.filter((a) => !known.current!.has(a.id) && !a.sample);
+        if (fresh.length) toast("success", fresh.length === 1 ? `New registration: ${fresh[0].name}` : `${fresh.length} new registrations`);
       }
-      if (!res.ok) throw new Error(String(res.status));
-      setData(await res.json());
+      known.current = new Set(list.map((a) => a.id));
+      setData(list);
       setLoadError("");
-    } catch {
-      setLoadError("Couldn't load the register. Retrying automatically…");
+    } catch (e) {
+      if ((e as Error).message !== "Signed out") setLoadError("Couldn't reach the server. Retrying automatically…");
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     setSeen(readSeen());
-    setRegisterUrl(window.location.origin + "/register");
     load();
     const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
-    const onFocus = () => load();
-    window.addEventListener("focus", onFocus);
-    return () => { clearInterval(t); window.removeEventListener("focus", onFocus); };
+    const onVis = () => { if (!document.hidden) load(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
   }, [load]);
 
   const list = data ?? [];
-  const newOnes = seen === null ? [] : list.filter((a) => !a.sample && a.submittedAt > seen);
-  const markSeen = () => {
-    const latest = list.reduce((m, a) => (a.submittedAt > m ? a.submittedAt : m), seen || "");
+  const newCount = seen ? list.filter((a) => !a.sample && a.submittedAt > seen).length : 0;
+  const markSeen = useCallback(() => {
+    const latest = (data ?? []).reduce((m, a) => (a.submittedAt > m ? a.submittedAt : m), readSeen() || new Date(0).toISOString());
     writeSeen(latest);
     setSeen(latest);
-  };
+  }, [data]);
+  // First visit ever: treat everything already there as seen.
+  useEffect(() => { if (data && !readSeen()) markSeen(); }, [data, markSeen]);
 
-  const filtered = useMemo(() => {
-    const ql = q.toLowerCase();
-    return list
-      .filter((a) =>
-        (!fy || String(a.year) === fy) &&
-        (!fr || a.region === fr) &&
-        (!fi || a.industry === fi) &&
-        (!status || (status === "v") === a.verified) &&
-        (!ql || [a.name, a.employer, a.city, a.title, a.email, a.phone].join(" ").toLowerCase().includes(ql)))
-      .sort((a, b) => {
-        const x = a[sort.k] ?? "", y = b[sort.k] ?? "";
-        return (x > y ? 1 : x < y ? -1 : 0) * sort.d;
-      });
-  }, [list, q, fy, fr, fi, status, sort]);
+  const open = list.find((a) => a.id === openId) || null;
 
-  async function verify(a: Alumnus) {
-    const res = await fetch(`/api/alumni/${a.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ verified: true }) });
-    if (res.ok) load();
+  function onChanged(updated: Alumnus | null) {
+    if (!updated) { setData((d) => d?.filter((a) => a.id !== openId) ?? d); setOpenId(null); return; }
+    setData((d) => d?.map((a) => (a.id === updated.id ? updated : a)) ?? d);
   }
-  async function remove(a: Alumnus) {
-    if (!confirm(`Delete the record for ${a.name}? This cannot be undone.`)) return;
-    const res = await fetch(`/api/alumni/${a.id}`, { method: "DELETE" });
-    if (res.ok) load();
+
+  async function onBulk(action: "verify" | "unverify" | "delete", ids: string[]) {
+    if (action === "delete") {
+      const ok = await confirm({ title: `Delete ${ids.length} record${ids.length > 1 ? "s" : ""}?`, body: "These records will be permanently removed from the register. This can't be undone.", confirm: "Delete", danger: true });
+      if (!ok) return false;
+    }
+    try {
+      const { changed } = await api<{ changed: number }>("/api/alumni/bulk", { method: "POST", json: { action, ids } });
+      const verb = action === "verify" ? "verified" : action === "unverify" ? "marked unverified" : "deleted";
+      toast("success", `${changed} record${changed === 1 ? "" : "s"} ${verb}.`);
+      await load();
+      return true;
+    } catch (e) { toast("error", (e as Error).message); return false; }
   }
+
+  async function copyLink() {
+    const url = `${window.location.origin}/register`;
+    try { await navigator.clipboard.writeText(url); toast("success", "Registration link copied. Paste it into WhatsApp, email or SMS."); }
+    catch { window.prompt("Copy this registration link:", url); }
+  }
+
   async function removeSamples() {
     const n = list.filter((a) => a.sample).length;
-    if (!n || !confirm(`Remove the ${n} sample records? Real registrations are kept.`)) return;
-    await fetch("/api/alumni?sample=1", { method: "DELETE" });
-    load();
-  }
-
-  function exportCsv() {
-    const h: (keyof Alumnus)[] = ["name", "gender", "year", "prog", "phone", "email", "region", "city", "employer", "title", "industry", "chapter", "verified", "submittedAt"];
-    const cell = (v: unknown) => {
-      let s = String(v ?? "");
-      if (/^[=+\-@]/.test(s)) s = "'" + s; // stop spreadsheet formula injection from member-entered text
-      return '"' + s.replace(/"/g, '""') + '"';
-    };
-    const csv = [h.join(","), ...filtered.map((a) => h.map((k) => cell(a[k])).join(","))].join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `alumni-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    if (!(await confirm({ title: `Remove ${n} sample records?`, body: "Only the fictional sample records are removed. Real registrations are kept.", confirm: "Remove samples", danger: true }))) return;
+    try { await api("/api/alumni?sample=1", { method: "DELETE" }); toast("success", "Sample records removed."); load(); }
+    catch (e) { toast("error", (e as Error).message); }
   }
 
   async function signOut() {
@@ -121,167 +104,64 @@ export default function AdminPage() {
     window.location.href = "/login";
   }
 
-  function copyLink() {
-    navigator.clipboard?.writeText(registerUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
-  }
-
-  const verifiedCount = list.filter((a) => a.verified).length;
-  const sampleCount = list.filter((a) => a.sample).length;
-  const sortBy = (k: SortKey) => setSort((s) => ({ k, d: s.k === k ? (s.d === 1 ? -1 : 1) : 1 }));
+  const samples = list.filter((a) => a.sample).length;
+  const pending = list.filter((a) => !a.verified).length;
+  const TABS: [Tab, string, React.ReactNode, number][] = [
+    ["dir", "Directory", <IconList key="l" size={16} />, pending],
+    ["rep", "Reports", <IconChart key="c" size={16} />, 0],
+    ["act", "Activity", <IconActivity key="a" size={16} />, 0],
+  ];
 
   return (
     <>
-      <header className="top">
+      <header className="site-header">
         <div className="wrap">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div className="bar">
             <Brand />
-            <button className="btn alt" style={{ color: "var(--headtxt)", borderColor: "var(--gold)" }} onClick={signOut}>Sign out</button>
+            <div className="header-actions">
+              <ThemeToggle />
+              <button className="btn on-dark" onClick={signOut} aria-label="Sign out"><IconLogout size={16} /><span className="hide-xs">Sign out</span></button>
+            </div>
           </div>
-          <p>
-            Admin dashboard. New registrations appear here automatically. Share the{" "}
-            <a href="/register" target="_blank">registration form</a> with members.
-          </p>
-          <nav className="tabs" role="tablist">
-            {([["dir", "Directory"], ["rep", "Reports"]] as [Tab, string][]).map(([t, label]) => (
-              <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{label}</button>
+          <nav className="tabs" role="tablist" aria-label="Dashboard sections">
+            {TABS.map(([t, label, icon, badge]) => (
+              <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
+                {icon}{label}{badge > 0 && <span className="count" title={`${badge} awaiting verification`}>{badge}</span>}
+              </button>
             ))}
           </nav>
         </div>
       </header>
 
-      <main className="wrap">
-        {loadError && <div className="msg e">{loadError}</div>}
+      <main className="page">
+        <div className="wrap stack">
+          {loadError && <div className="alert error"><IconAlert />{loadError}</div>}
 
-        {tab === "dir" && (
-          <section>
-            {newOnes.length > 0 && (
-              <div className="msg g" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                <span>
-                  {newOnes.length} new registration{newOnes.length > 1 ? "s" : ""} since your last visit: {newOnes.slice(0, 5).map((a) => a.name).join(", ")}
-                  {newOnes.length > 5 ? "…" : ""}
-                </span>
-                <button className="btn alt" onClick={markSeen}>Mark as seen</button>
-              </div>
-            )}
-
-            <div className="stats">
-              {[
-                [list.length, "alumni records"],
-                [new Set(list.map((a) => a.year)).size, "year groups covered"],
-                [`${new Set(list.map((a) => a.region)).size} of ${REGIONS.length}`, "regions represented"],
-                [list.length - verifiedCount, "awaiting verification"],
-              ].map(([v, l]) => (
-                <div className="stat" key={String(l)}><b>{v}</b><span>{l}</span></div>
-              ))}
+          {newCount > 0 && tab === "dir" && (
+            <div className="alert info" style={{ alignItems: "center" }}>
+              <IconSparkle />
+              <span style={{ flex: 1 }}>{newCount} new registration{newCount > 1 ? "s" : ""} since your last visit, highlighted below.</span>
+              <button className="btn secondary sm" onClick={markSeen}>Mark as seen</button>
             </div>
+          )}
 
-            <div className="panel">
-              <div className="filters">
-                <input type="search" placeholder="Search name, employer, city, email, phone" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
-                <select aria-label="Year group" value={fy} onChange={(e) => setFy(e.target.value)}>
-                  <option value="">All year groups</option>
-                  {yearGroups().map((y) => <option key={y}>{y}</option>)}
-                </select>
-                <select aria-label="Region" value={fr} onChange={(e) => setFr(e.target.value)}>
-                  <option value="">All regions</option>
-                  {REGIONS.map((r) => <option key={r}>{r}</option>)}
-                </select>
-                <select aria-label="Industry" value={fi} onChange={(e) => setFi(e.target.value)}>
-                  <option value="">All industries</option>
-                  {INDUSTRIES.map((r) => <option key={r}>{r}</option>)}
-                </select>
-                <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                  <option value="">Any status</option>
-                  <option value="u">Unverified</option>
-                  <option value="v">Verified</option>
-                </select>
-                <button className="btn alt" onClick={() => { setQ(""); setFy(""); setFr(""); setFi(""); setStatus(""); }}>Clear filters</button>
-                <button className="btn" onClick={exportCsv}>Export CSV</button>
-              </div>
-              <p className="muted" style={{ margin: "0 0 8px" }}>
-                {data === null ? "Loading…" : `Showing ${filtered.length} of ${list.length} alumni, newest first by default`}
-              </p>
-              <div className="scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      {COLS.map(([k, l]) => (
-                        <th key={k} aria-sort={sort.k === k ? (sort.d === 1 ? "ascending" : "descending") : undefined}>
-                          <button onClick={() => sortBy(k)}>{l}{sort.k === k ? (sort.d === 1 ? " ▲" : " ▼") : ""}</button>
-                        </th>
-                      ))}
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data !== null && filtered.length === 0 && (
-                      <tr><td colSpan={9}>{list.length ? "No alumni match these filters." : "No registrations yet. Share the registration form with members."}</td></tr>
-                    )}
-                    {filtered.map((a) => (
-                      <tr key={a.id} className={newOnes.includes(a) ? "new" : undefined}>
-                        <td><b>{a.name}</b><small>{a.gender}</small></td>
-                        <td>{a.year}</td>
-                        <td>{a.prog}</td>
-                        <td>{a.city}<small>{a.region}</small></td>
-                        <td>{a.employer || "-"}<small>{a.title}</small></td>
-                        <td>{a.phone}<small>{a.email}</small></td>
-                        <td>{a.chapter}</td>
-                        <td>
-                          <span className={`tag ${a.verified ? "ok" : "pend"}`}>{a.verified ? "Verified" : "Unverified"}</span>
-                          {!a.verified && (
-                            <><br /><button className="link green" onClick={() => verify(a)} aria-label={`Verify ${a.name}`}>Verify</button></>
-                          )}
-                          {!a.sample && <small>{new Date(a.submittedAt).toLocaleDateString()}</small>}
-                        </td>
-                        <td><button className="link red" onClick={() => remove(a)} aria-label={`Delete ${a.name}`}>Delete</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {samples > 0 && tab === "dir" && (
+            <div className="alert info" style={{ alignItems: "center" }}>
+              <IconAlert />
+              <span style={{ flex: 1 }}>The directory includes {samples} fictional sample records for testing.</span>
+              <button className="btn secondary sm" onClick={removeSamples}><IconX size={14} />Remove samples</button>
             </div>
+          )}
 
-            <div className="panel">
-              <h2>Registration link</h2>
-              <p style={{ marginTop: 0 }}>Send this link to members. Their registrations appear in the directory above as Unverified.</p>
-              <div className="filters">
-                <input readOnly value={registerUrl} aria-label="Registration link" onFocus={(e) => e.target.select()} />
-                <button className="btn" onClick={copyLink}>{copied ? "Copied" : "Copy link"}</button>
-                {sampleCount > 0 && <button className="btn alt" onClick={removeSamples}>Remove {sampleCount} sample records</button>}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {tab === "rep" && (
-          <section>
-            <Bars title="Alumni by region" list={list} by={(a) => a.region} />
-            <Bars title="Alumni by year group" list={list} by={(a) => String(a.year)} />
-            <Bars title="Alumni by industry" list={list} by={(a) => a.industry} />
-          </section>
-        )}
-
-      </main>
-    </>
-  );
-}
-
-function Bars({ title, list, by }: { title: string; list: Alumnus[]; by: (a: Alumnus) => string }) {
-  const counts: Record<string, number> = {};
-  list.forEach((a) => { counts[by(a)] = (counts[by(a)] || 0) + 1; });
-  const keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  const max = counts[keys[0]] || 1;
-  return (
-    <div className="panel">
-      <h2>{title}</h2>
-      {keys.length === 0 && <p className="muted">No data yet.</p>}
-      {keys.map((k) => (
-        <div className="bar" key={k}>
-          <em>{k}</em>
-          <i style={{ width: `${(counts[k] / max) * 60}%` }} />
-          {counts[k]}
+          {tab === "dir" && <Directory data={data} seen={seen} onOpen={(a) => setOpenId(a.id)} onBulk={onBulk} onCopyLink={copyLink} />}
+          {tab === "rep" && <Reports data={list} />}
+          {tab === "act" && <Activity />}
         </div>
-      ))}
-    </div>
+      </main>
+
+      {open && <RecordDrawer record={open} onClose={() => setOpenId(null)} onChanged={onChanged} toast={toast} confirm={confirm} />}
+      {dialog}
+      {toasts}
+    </>
   );
 }

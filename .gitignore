@@ -7,3 +7,6 @@ next-env.d.ts
 .env
 # Member records contain personal data - never commit them
 data/*.json
+data/*.db
+data/*.db-*
+data/*.imported
