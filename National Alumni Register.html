@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>National Alumni Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#e9eef3;--surface:#fff;--ink:#14213d;--muted:#5b6778;--line:#cdd6e0;--green:#0b6e4f;--gold:#e0a800;--goldtxt:#7a5c00;--red:#b42318;--head:#14213d;--headtxt:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0e1621;--surface:#172232;--ink:#e8edf3;--muted:#9aa7b8;--line:#2a3a50;--green:#3ec28f;--gold:#f2c230;--goldtxt:#f2c230;--red:#ff8a7a;--head:#0a111b;--headtxt:#e8edf3}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0e1621;--surface:#172232;--ink:#e8edf3;--muted:#9aa7b8;--line:#2a3a50;--green:#3ec28f;--gold:#f2c230;--goldtxt:#f2c230;--red:#ff8a7a;--head:#0a111b;--headtxt:#e8edf3}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+header{background:var(--head);color:var(--headtxt);padding:22px 20px 0;border-bottom:5px solid var(--gold)}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font:800 clamp(24px,5vw,38px)/1.1 "Bricolage Grotesque",sans-serif;margin:0 0 4px}
+header p{margin:0 0 16px;opacity:.8}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav button{background:none;border:0;color:var(--headtxt);opacity:.7;font:600 14px "IBM Plex Sans",sans-serif;padding:10px 16px;cursor:pointer;border-radius:8px 8px 0 0;white-space:nowrap}
+nav button[aria-selected=true]{background:var(--bg);color:var(--ink);opacity:1}
+main{padding:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--surface);border-left:4px solid var(--green);padding:12px 14px;border-radius:4px}
+.stat b{display:block;font:800 28px "Bricolage Grotesque",sans-serif}
+.stat span{color:var(--muted);font-size:13px}
+.bar{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}
+.bar i{display:block;height:12px;background:var(--green);border-radius:2px}
+.bar em{width:110px;font-style:normal;color:var(--muted)}
+.panel{background:var(--surface);padding:16px;border-radius:6px;margin-bottom:18px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.filters input{flex:1 1 200px}
+.btn{background:var(--green);color:#fff;border:0;border-radius:6px;padding:9px 16px;font:600 14px "IBM Plex Sans",sans-serif;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{text-align:left;font-weight:600;font-size:13px;color:var(--muted);padding:8px;border-bottom:2px solid var(--line);cursor:pointer;white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td small{display:block;color:var(--muted)}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.ok{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.pend{background:color-mix(in srgb,var(--gold) 25%,transparent);color:var(--goldtxt)}
+.del{background:none;border:0;color:var(--red);cursor:pointer;font:inherit}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:14px}
+.full{grid-column:1/-1}
+.msg{padding:10px 12px;border-radius:6px;margin-bottom:12px;font-weight:500}
+.msg.e{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
+.msg.g{background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)}
+.tbl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tbl div{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--surface)}
+.tbl h3{margin:0 0 6px;font:800 16px "Bricolage Grotesque",sans-serif}
+.tbl code{display:block;font-size:12.5px;color:var(--muted)}
+.tbl code b{color:var(--ink)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>National Alumni Register</h1>
+<p>Search, filter, verify and export alumni records. Send members the <a href="register.html" target="_blank" style="color:var(--gold)">registration form</a>, then import what they return.</p>
+<nav role="tablist">
+<button role="tab" data-t="dir" aria-selected="true">Directory</button>
+<button role="tab" data-t="add" aria-selected="false">Import registrations <span id="inboxBadge"></span></button>
+<button role="tab" data-t="rep" aria-selected="false">Reports</button>
+<button role="tab" data-t="sch" aria-selected="false">Database design</button>
+</nav></div></header>
+<main class="wrap">
+
+<section id="dir">
+<div class="stats" id="stats"></div>
+<div class="panel">
+<div class="filters">
+<input id="q" type="search" placeholder="Search name, employer, city, job title" aria-label="Search">
+<select id="fy" aria-label="Year group"></select>
+<select id="fr" aria-label="Region"></select>
+<select id="fi" aria-label="Industry"></select>
+<button class="btn alt" id="reset">Clear filters</button>
+<button class="btn" id="exp">Export CSV</button>
+</div>
+<p id="count" style="color:var(--muted);margin:0 0 8px"></p>
+<div class="scroll"><table><thead><tr id="thead"></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</section>
+
+<section id="add" hidden>
+<div class="panel">
+<h2 style="margin-top:0;font-family:'Bricolage Grotesque'">Import registrations</h2>
+<p style="margin-top:0">Members complete <a href="register.html" target="_blank">register.html</a> and send back a registration code. Paste one or more emails or codes below. Any text around the codes is ignored. New records arrive as <b>unverified</b>.</p>
+<div id="fmsg"></div>
+<div id="inbox" class="msg g" hidden></div>
+<textarea id="paste" rows="7" style="width:100%;font:12.5px/1.4 ui-monospace,Consolas,monospace;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px" placeholder="Paste registration emails or codes here (they start with NAR1:)"></textarea>
+<div class="filters" style="margin-top:10px"><button class="btn" id="imp">Import</button><a class="btn alt" href="register.html" target="_blank" style="text-decoration:none">Open registration form</a></div>
+</div>
+<div class="panel"><h2 style="margin-top:0;font-family:'Bricolage Grotesque'">Data on this computer</h2>
+<p style="margin-top:0">Records are saved in this browser only. Export a CSV backup regularly, because clearing browser data deletes the register.</p>
+<div class="filters"><button class="btn alt" id="clrSample">Remove sample records</button></div>
+</section>
+
+<section id="rep" hidden>
+<div class="panel"><h2 style="margin-top:0;font-family:'Bricolage Grotesque'">Alumni by region</h2><div id="r1"></div></div>
+<div class="panel"><h2 style="margin-top:0;font-family:'Bricolage Grotesque'">Alumni by year group</h2><div id="r2"></div></div>
+<div class="panel"><h2 style="margin-top:0;font-family:'Bricolage Grotesque'">Alumni by industry</h2><div id="r3"></div></div>
+</section>
+
+<section id="sch" hidden>
+<p>Relational design behind this screen. Each person has one ID, and everything else links back to it.</p>
+<div class="tbl">
+<div><h3>alumni</h3><code><b>alumni_id</b> PK</code><code>full_name, gender, dob</code><code>year_group_id FK</code><code>programme, verified_on</code></div>
+<div><h3>contacts</h3><code><b>contact_id</b> PK</code><code>alumni_id FK</code><code>phone, email, preferred_method</code></div>
+<div><h3>locations</h3><code><b>location_id</b> PK</code><code>alumni_id FK</code><code>country, region, city</code></div>
+<div><h3>careers</h3><code><b>career_id</b> PK</code><code>alumni_id FK</code><code>employer, job_title, industry, is_current</code></div>
+<div><h3>year_groups</h3><code><b>year_group_id</b> PK</code><code>graduation_year</code><code>class_rep_id FK to alumni</code></div>
+<div><h3>chapters</h3><code><b>chapter_id</b> PK</code><code>name, region, chair_id FK</code></div>
+<div><h3>memberships</h3><code><b>membership_id</b> PK</code><code>alumni_id FK, chapter_id FK</code><code>status, joined_on, dues_paid_until</code></div>
+<div><h3>engagement</h3><code><b>event_id</b> PK</code><code>alumni_id FK</code><code>type (event, donation, mentoring)</code><code>amount, date</code></div>
+<div><h3>consents</h3><code><b>consent_id</b> PK</code><code>alumni_id FK</code><code>given_on, directory_visible</code><code>sms_ok, email_ok</code></div>
+<div><h3>audit_log</h3><code><b>log_id</b> PK</code><code>user_id, action, table, record_id, timestamp</code></div>
+</div>
+</section>
+</main>
+
+<script>
+var REG=["Greater Accra","Ashanti","Western","Central","Eastern","Volta","Northern","Upper East","Upper West","Bono"];
+var IND=["Education","Health","Finance","Technology","Agriculture","Law","Engineering","Public Service","Media","Trade"];
+var CH=["Accra","Kumasi","Takoradi","Cape Coast","Ho","Tamale","International"];
+var YRS=[];for(var y=new Date().getFullYear();y>=1995;y--)YRS.push(y);
+var data=[],nid=1,sortK="name",sortD=1;
+var FN=["Ama","Kwame","Esi","Kofi","Abena","Yaw","Akosua","Kojo","Efua","Kwesi","Adwoa","Nana","Fiifi","Maame","Selorm","Dela","Zainab","Ibrahim","Mariam","Yakubu"];
+var LN=["Mensah","Owusu","Boateng","Asante","Appiah","Quaye","Tetteh","Agyeman","Danso","Ofori","Amoah","Adjei","Sarpong","Nkrumah","Abdulai","Kuffour","Darko","Annan"];
+var CT={"Greater Accra":"Accra","Ashanti":"Kumasi","Western":"Takoradi","Central":"Cape Coast","Eastern":"Koforidua","Volta":"Ho","Northern":"Tamale","Upper East":"Bolgatanga","Upper West":"Wa","Bono":"Sunyani"};
+var EM=["Korle Bu Teaching Hospital","GCB Bank","Ghana Education Service","Meltwater","Ministry of Finance","Fidelity Bank","Joy FM","Kasapreko","University of Ghana","Self-employed"];
+var TT=["Teacher","Nurse","Analyst","Software developer","Farm manager","Lawyer","Civil engineer","Administrator","Producer","Trader"];
+function rnd(i,n){return (i*7+i*i*3+11)%n}
+var STORE="nar.alumni";
+function save(){try{localStorage.setItem(STORE,JSON.stringify(data))}catch(_){}}
+var loaded=false;
+try{var saved=JSON.parse(localStorage.getItem(STORE));if(Array.isArray(saved)){data=saved;loaded=true;data.forEach(function(a){if(a.id>=nid)nid=a.id+1})}}catch(_){}
+if(!loaded)for(var i=0;i<28;i++){
+var fn=FN[(i*3)%FN.length],ln=LN[(i*5+2)%LN.length],r=REG[rnd(i,REG.length)],ix=rnd(i+3,IND.length);
+data.push({id:nid++,name:fn+" "+ln,gender:i%2?"Male":"Female",year:YRS[(i*3)%YRS.length],prog:["General Arts","General Science","Business"][i%3],
+phone:"024"+(4100000+i*37311).toString().slice(0,7),email:(fn+"."+ln+"@example.com").toLowerCase(),region:r,city:CT[r],
+employer:EM[ix],title:TT[ix],industry:IND[ix],chapter:CH[rnd(i,CH.length)],verified:i%3!==0,consent:true,sample:true});}
+save();
+function $(s){return document.querySelector(s)}
+function opts(el,list,first){el.innerHTML=(first?'<option value="">'+first+'</option>':'')+list.map(function(x){return '<option>'+x+'</option>'}).join('')}
+opts($("#fy"),YRS,"All year groups");opts($("#fr"),REG,"All regions");opts($("#fi"),IND,"All industries");
+var COLS=[["name","Name"],["year","Year"],["prog","Programme"],["region","Location"],["employer","Work"],["phone","Contact"],["chapter","Chapter"],["verified","Status"]];
+$("#thead").innerHTML=COLS.map(function(c){return '<th data-k="'+c[0]+'">'+c[1]+'</th>'}).join("")+"<th></th>";
+$("#thead").onclick=function(e){var k=e.target.dataset.k;if(!k)return;sortD=sortK===k?-sortD:1;sortK=k;draw()};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function filtered(){var q=$("#q").value.toLowerCase(),y=$("#fy").value,r=$("#fr").value,n=$("#fi").value;
+return data.filter(function(a){return(!y||a.year==y)&&(!r||a.region===r)&&(!n||a.industry===n)&&(!q||[a.name,a.employer,a.city,a.title].join(" ").toLowerCase().indexOf(q)>-1)})
+.sort(function(a,b){return (a[sortK]>b[sortK]?1:a[sortK]<b[sortK]?-1:0)*sortD})}
+function draw(){var L=filtered();
+$("#count").textContent="Showing "+L.length+" of "+data.length+" alumni";
+$("#rows").innerHTML=L.length?L.map(function(a){return "<tr><td><b>"+esc(a.name)+"</b><small>"+a.gender+"</small></td><td>"+a.year+"</td><td>"+esc(a.prog)+"</td><td>"+esc(a.city)+"<small>"+esc(a.region)+"</small></td><td>"+esc(a.employer||"-")+"<small>"+esc(a.title||"")+"</small></td><td>"+esc(a.phone)+"<small>"+esc(a.email)+"</small></td><td>"+esc(a.chapter)+"</td><td><span class='tag "+(a.verified?"ok'>Verified":"pend'>Unverified")+"</span>"+(a.verified?"":"<br><button class='del' style='color:var(--green)' data-v='"+a.id+"' aria-label='Verify "+esc(a.name)+"'>Verify</button>")+"</td><td><button class='del' data-id='"+a.id+"' aria-label='Delete "+esc(a.name)+"'>Delete</button></td></tr>"}).join(""):"<tr><td colspan='9'>No alumni match these filters. Clear a filter or register a new alumnus.</td></tr>";
+var yrs={},rg={};data.forEach(function(a){yrs[a.year]=1;rg[a.region]=1});
+var v=data.filter(function(a){return a.verified}).length;
+$("#stats").innerHTML=[[data.length,"alumni records"],[Object.keys(yrs).length,"year groups covered"],[Object.keys(rg).length+" of 10","regions represented"],[data.length?Math.round(v/data.length*100)+"%":"0%","records verified"]].map(function(s){return "<div class='stat'><b>"+s[0]+"</b><span>"+s[1]+"</span></div>"}).join("");
+}
+$("#rows").onclick=function(e){var id=e.target.dataset.id,v=e.target.dataset.v;
+if(v){data.forEach(function(a){if(a.id==v){a.verified=true;a.verified_on=new Date().toISOString().slice(0,10)}});save();draw();return}
+if(id&&confirm("Delete this record?")){data=data.filter(function(a){return a.id!=id});save();draw()}};
+["#q","#fy","#fr","#fi"].forEach(function(s){$(s).oninput=draw});
+$("#reset").onclick=function(){$("#q").value="";$("#fy").value="";$("#fr").value="";$("#fi").value="";draw()};
+$("#exp").onclick=function(){var L=filtered(),h=["name","gender","year","prog","phone","email","region","city","employer","title","industry","chapter","verified"];
+var csv=[h.join(",")].concat(L.map(function(a){return h.map(function(k){var s=String(a[k]==null?"":a[k]);if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}).join(",")})).join("\n");
+var b=new Blob([csv],{type:"text/csv"}),u=URL.createObjectURL(b),l=document.createElement("a");l.href=u;l.download="alumni.csv";l.click()};
+// ---- Import registration codes produced by register.html ----
+var FIELDS=["name","gender","year","prog","phone","email","region","city","employer","title","industry","chapter"];
+function decode(code){try{return JSON.parse(decodeURIComponent(escape(atob(code.slice(5)))))}catch(_){return null}}
+function inboxCodes(){try{return JSON.parse(localStorage.getItem("nar.inbox")||"[]")}catch(_){return[]}}
+function showInbox(){var n=inboxCodes().length;$("#inboxBadge").textContent=n?"("+n+")":"";
+$("#inbox").hidden=!n;$("#inbox").innerHTML=n?n+" registration"+(n>1?"s were":" was")+" made on this computer. <button class='btn' id='impLocal' style='margin-left:8px'>Import them</button>":"";
+if(n)$("#impLocal").onclick=function(){importCodes(inboxCodes());try{localStorage.removeItem("nar.inbox")}catch(_){}showInbox()}}
+function importCodes(codes){
+var added=[],skipped=[],bad=0,batch={};
+codes.forEach(function(c){var d=decode(c);
+if(!d||typeof d!=="object"||!d.name){bad++;return}
+var r={};FIELDS.forEach(function(k){r[k]=String(d[k]==null?"":d[k]).trim().slice(0,120)});
+r.year=+r.year;r.phone=r.phone.replace(/[\s-]/g,"");
+if(!/^0\d{9}$/.test(r.phone)||!/^\S+@\S+\.\S+$/.test(r.email)||REG.indexOf(r.region)<0||YRS.indexOf(r.year)<0){bad++;return}
+r.submitted=d.submitted||"";
+batch[r.name.toLowerCase()+"|"+r.year]=r}); // later code for the same person replaces an earlier one
+Object.keys(batch).forEach(function(k){var r=batch[k];
+if(data.some(function(a){return a.name.toLowerCase()+"|"+a.year===k})){skipped.push(r.name+" ("+r.year+")");return}
+r.id=nid++;r.verified=false;r.consent=true;data.push(r);added.push(r.name)});
+save();draw();rep();
+var out=[];
+if(added.length)out.push("<div class='msg g'>Added "+added.length+" as unverified: "+esc(added.join(", "))+".</div>");
+if(skipped.length)out.push("<div class='msg e'>Already in the directory, so not added: "+esc(skipped.join(", "))+". To update a record, delete the old one and import again.</div>");
+if(bad)out.push("<div class='msg e'>"+bad+" code"+(bad>1?"s were":" was")+" damaged or incomplete. Ask the member to copy the full code again.</div>");
+if(!codes.length)out.push("<div class='msg e'>No registration codes found. Codes start with NAR1:</div>");
+$("#fmsg").innerHTML=out.join("")}
+$("#imp").onclick=function(){var t=$("#paste").value;
+var codes=t.match(/NAR1:[A-Za-z0-9+\/]+=*/g)||[];importCodes(codes);if(codes.length)$("#paste").value=""};
+$("#clrSample").onclick=function(){var n=data.filter(function(a){return a.sample}).length;
+if(!n){$("#fmsg").innerHTML="<div class='msg g'>There are no sample records left.</div>";return}
+if(confirm("Remove the "+n+" sample records? Real registrations are kept.")){data=data.filter(function(a){return!a.sample});save();draw();rep();$("#fmsg").innerHTML="<div class='msg g'>Sample records removed.</div>"}};
+window.addEventListener("storage",function(e){if(e.key==="nar.inbox")showInbox()});
+showInbox();
+function bars(el,obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a]}),mx=obj[k[0]]||1;
+$(el).innerHTML=k.map(function(x){return "<div class='bar'><em>"+esc(x)+"</em><i style='width:"+(obj[x]/mx*60)+"%'></i>"+obj[x]+"</div>"}).join("")}
+function rep(){var a={},b={},c={};data.forEach(function(x){a[x.region]=(a[x.region]||0)+1;b[x.year]=(b[x.year]||0)+1;c[x.industry]=(c[x.industry]||0)+1});bars("#r1",a);bars("#r2",b);bars("#r3",c)}
+document.querySelectorAll("nav button").forEach(function(b){b.onclick=function(){
+document.querySelectorAll("nav button").forEach(function(x){x.setAttribute("aria-selected",x===b)});
+["dir","add","rep","sch"].forEach(function(s){$("#"+s).hidden=s!==b.dataset.t});if(b.dataset.t==="rep")rep()}});
+draw();
+</script>
+</body>
+</html>

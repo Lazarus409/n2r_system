@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alumni Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eef3;--surface:#fff;--ink:#14213d;--muted:#5b6778;--line:#cdd6e0;--green:#0b6e4f;--gold:#e0a800;--goldtxt:#7a5c00;--red:#b42318;--head:#14213d;--headtxt:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0e1621;--surface:#172232;--ink:#e8edf3;--muted:#9aa7b8;--line:#2a3a50;--green:#3ec28f;--gold:#f2c230;--goldtxt:#f2c230;--red:#ff8a7a;--head:#0a111b;--headtxt:#e8edf3}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0e1621;--surface:#172232;--ink:#e8edf3;--muted:#9aa7b8;--line:#2a3a50;--green:#3ec28f;--gold:#f2c230;--goldtxt:#f2c230;--red:#ff8a7a;--head:#0a111b;--headtxt:#e8edf3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+header{background:var(--head);color:var(--headtxt);padding:calc(22px + env(safe-area-inset-top,0px)) 16px 18px;border-bottom:5px solid var(--gold)}
+.wrap{max-width:760px;margin:0 auto}
+h1{font:800 clamp(24px,5vw,34px)/1.1 "Bricolage Grotesque",sans-serif;margin:0 0 6px}
+h2{font:800 20px "Bricolage Grotesque",sans-serif;margin:0 0 8px}
+header p{margin:0;opacity:.85}
+main{padding:20px 16px}
+.panel{background:var(--surface);padding:18px;border-radius:6px;margin-bottom:18px}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:14px}
+label small{font-weight:400;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-width:0;width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.full{grid-column:1/-1}
+.check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400}
+.check input{width:auto;margin-top:4px}
+.btn{display:inline-block;background:var(--green);color:#fff;border:0;border-radius:6px;padding:10px 18px;font:600 14px "IBM Plex Sans",sans-serif;cursor:pointer;text-decoration:none}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.msg{padding:10px 12px;border-radius:6px;margin-bottom:12px;font-weight:500}
+.msg.e{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
+.msg.g{background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)}
+textarea{font:12.5px/1.4 ui-monospace,Consolas,monospace;resize:vertical;word-break:break-all}
+.muted{color:var(--muted);font-size:14px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>National Alumni Register</h1>
+<p>Fill in your details below to join the register. It takes about two minutes.</p>
+</div></header>
+<main class="wrap">
+
+<section id="formView" class="panel">
+<div id="fmsg" role="alert"></div>
+<form id="f" novalidate>
+<label>Full name<input name="name" autocomplete="name" required></label>
+<label>Gender<select name="gender"><option>Female</option><option>Male</option></select></label>
+<label>Year group<small>Year you completed school</small><select name="year" id="fyear"></select></label>
+<label>Programme<small>&nbsp;</small><select name="prog" id="fprog"></select></label>
+<label>Phone<input name="phone" type="tel" autocomplete="tel" placeholder="0244123456" required></label>
+<label>Email<input name="email" type="email" autocomplete="email" placeholder="name@example.com" required></label>
+<label>Region<select name="region" id="freg"></select></label>
+<label>City or town<input name="city" autocomplete="address-level2" required></label>
+<label>Employer<input name="employer" autocomplete="organization"></label>
+<label>Job title<input name="title" autocomplete="organization-title"></label>
+<label>Industry<select name="industry" id="find"></select></label>
+<label>Chapter<select name="chapter" id="fch"></select></label>
+<label class="full check"><input type="checkbox" name="consent">I agree to have my details stored and shared with other alumni, as set out in the data policy.</label>
+<div class="full"><button class="btn" type="submit">Submit registration</button></div>
+</form>
+</section>
+
+<section id="doneView" class="panel" hidden>
+<h2>One last step: send your registration</h2>
+<p id="doneIntro">Your details are ready. Send them to the alumni office so they can be added to the register.</p>
+<div class="actions">
+<a class="btn" id="mail" href="#">Send by email</a>
+<button class="btn alt" id="copy" type="button">Copy registration code</button>
+</div>
+<p class="muted" id="altText">If the email button doesn't open your mail app, copy the code below and send it to the alumni office by email or WhatsApp.</p>
+<textarea id="code" rows="5" readonly aria-label="Registration code"></textarea>
+<p id="copied" class="msg g" hidden>Copied. Paste it into a message to the alumni office.</p>
+<div class="actions"><button class="btn alt" id="again" type="button">Edit my details</button></div>
+</section>
+
+</main>
+<script>
+/* ===== Settings: set this to the alumni office email before sending this page to members ===== */
+var ADMIN_EMAIL = "";
+/* ============================================================================================ */
+
+// These lists must match the ones in "National Alumni Register.html"
+var REG=["Greater Accra","Ashanti","Western","Central","Eastern","Volta","Northern","Upper East","Upper West","Bono"];
+var IND=["Education","Health","Finance","Technology","Agriculture","Law","Engineering","Public Service","Media","Trade"];
+var CH=["Accra","Kumasi","Takoradi","Cape Coast","Ho","Tamale","International"];
+var PROG=["General Arts","General Science","Business","Visual Arts","Home Economics","Agriculture"];
+var YRS=[];for(var y=new Date().getFullYear();y>=1995;y--)YRS.push(y);
+var FIELDS=["name","gender","year","prog","phone","email","region","city","employer","title","industry","chapter"];
+
+function $(s){return document.querySelector(s)}
+function opts(el,list){el.innerHTML=list.map(function(x){return '<option>'+x+'</option>'}).join('')}
+opts($("#fyear"),YRS);opts($("#fprog"),PROG);opts($("#freg"),REG);opts($("#find"),IND);opts($("#fch"),CH);
+
+function encode(obj){return "NAR1:"+btoa(unescape(encodeURIComponent(JSON.stringify(obj))))}
+
+$("#f").onsubmit=function(e){
+  e.preventDefault();var f=e.target,d={},m=$("#fmsg");
+  FIELDS.forEach(function(k){d[k]=f[k].value.trim()});
+  d.phone=d.phone.replace(/[\s-]/g,"");
+  var err=[];
+  if(!d.name)err.push("Enter your full name.");
+  if(!/^0\d{9}$/.test(d.phone))err.push("Phone must be 10 digits starting with 0, for example 0244123456.");
+  if(!/^\S+@\S+\.\S+$/.test(d.email))err.push("Enter a valid email address.");
+  if(!d.city)err.push("Enter your city or town.");
+  if(!f.consent.checked)err.push("Tick the consent box to register.");
+  if(err.length){m.innerHTML="<div class='msg e'>"+err.join("<br>")+"</div>";m.scrollIntoView({block:"center"});return}
+  m.innerHTML="";
+  d.year=+d.year;d.consent=true;d.submitted=new Date().toISOString();
+  var code=encode(d);
+
+  // Same browser as the Directory (e.g. registering at an event desk): queue it locally too.
+  try{var q=JSON.parse(localStorage.getItem("nar.inbox")||"[]");q.push(code);localStorage.setItem("nar.inbox",JSON.stringify(q))}catch(_){}
+
+  $("#code").value=code;
+  var subject="Alumni registration: "+d.name+" ("+d.year+")";
+  var body="Please add me to the National Alumni Register.\n\n"+d.name+", class of "+d.year+"\n\nRegistration code (do not edit):\n"+code+"\n";
+  if(ADMIN_EMAIL){
+    $("#mail").href="mailto:"+ADMIN_EMAIL+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+    $("#mail").hidden=false;
+  }else{$("#mail").hidden=true;$("#doneIntro").textContent="Your details are ready. Copy the code below and send it to the alumni office by email or WhatsApp.";$("#altText").hidden=true}
+  $("#copied").hidden=true;
+  $("#formView").hidden=true;$("#doneView").hidden=false;window.scrollTo(0,0);
+};
+$("#copy").onclick=function(){
+  var t=$("#code");t.select();
+  var ok=function(){$("#copied").hidden=false};
+  if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(ok,function(){document.execCommand("copy");ok()});
+  else{document.execCommand("copy");ok()}
+};
+$("#again").onclick=function(){$("#doneView").hidden=true;$("#formView").hidden=false};
+</script>
+</body>
+</html>
