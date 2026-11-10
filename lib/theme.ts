@@ -2,7 +2,7 @@ export type Theme = "system" | "light" | "dark";
 export const THEME_KEY = "nar.theme";
 export const SPLASH_KEY = "nar.splash";
 /** Minimum time the splash stays up (ms from navigation start), so it reads as intentional rather than a flicker. */
-export const SPLASH_MIN_MS = 1400;
+export const SPLASH_MIN_MS = 3600;
 
 /**
  * Runs in <head> before first paint:
