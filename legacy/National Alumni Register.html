@@ -71,6 +71,7 @@ label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:14px}
 <main class="wrap">
 
 <section id="dir">
+<div id="newBanner"></div>
 <div class="stats" id="stats"></div>
 <div class="panel">
 <div class="filters">
@@ -174,9 +175,13 @@ var b=new Blob([csv],{type:"text/csv"}),u=URL.createObjectURL(b),l=document.crea
 var FIELDS=["name","gender","year","prog","phone","email","region","city","employer","title","industry","chapter"];
 function decode(code){try{return JSON.parse(decodeURIComponent(escape(atob(code.slice(5)))))}catch(_){return null}}
 function inboxCodes(){try{return JSON.parse(localStorage.getItem("nar.inbox")||"[]")}catch(_){return[]}}
-function showInbox(){var n=inboxCodes().length;$("#inboxBadge").textContent=n?"("+n+")":"";
-$("#inbox").hidden=!n;$("#inbox").innerHTML=n?n+" registration"+(n>1?"s were":" was")+" made on this computer. <button class='btn' id='impLocal' style='margin-left:8px'>Import them</button>":"";
-if(n)$("#impLocal").onclick=function(){importCodes(inboxCodes());try{localStorage.removeItem("nar.inbox")}catch(_){}showInbox()}}
+// Registrations made in register.html on this same computer/browser land in "nar.inbox"; pull them straight into the directory.
+function autoImport(){var c=inboxCodes();if(!c.length)return;
+try{localStorage.removeItem("nar.inbox")}catch(_){}
+var before=data.length;importCodes(c);var n=data.length-before;
+if(n){$("#newBanner").innerHTML="<div class='msg g'>"+n+" new registration"+(n>1?"s":"")+" added to the directory (shown as Unverified).</div>";
+sortK="id";sortD=-1;draw()}}
+function showInbox(){autoImport()}
 function importCodes(codes){
 var added=[],skipped=[],bad=0,batch={};
 codes.forEach(function(c){var d=decode(c);
@@ -187,7 +192,9 @@ if(!/^0\d{9}$/.test(r.phone)||!/^\S+@\S+\.\S+$/.test(r.email)||REG.indexOf(r.reg
 r.submitted=d.submitted||"";
 batch[r.name.toLowerCase()+"|"+r.year]=r}); // later code for the same person replaces an earlier one
 Object.keys(batch).forEach(function(k){var r=batch[k];
-if(data.some(function(a){return a.name.toLowerCase()+"|"+a.year===k})){skipped.push(r.name+" ("+r.year+")");return}
+var ex=data.filter(function(a){return a.name.toLowerCase()+"|"+a.year===k})[0];
+if(ex){if(!ex.verified&&ex.submitted&&r.submitted>ex.submitted){FIELDS.concat("submitted").forEach(function(f){ex[f]=r[f]});added.push(r.name+" (updated)")}
+else skipped.push(r.name+" ("+r.year+")");return}
 r.id=nid++;r.verified=false;r.consent=true;data.push(r);added.push(r.name)});
 save();draw();rep();
 var out=[];
@@ -201,7 +208,8 @@ var codes=t.match(/NAR1:[A-Za-z0-9+\/]+=*/g)||[];importCodes(codes);if(codes.len
 $("#clrSample").onclick=function(){var n=data.filter(function(a){return a.sample}).length;
 if(!n){$("#fmsg").innerHTML="<div class='msg g'>There are no sample records left.</div>";return}
 if(confirm("Remove the "+n+" sample records? Real registrations are kept.")){data=data.filter(function(a){return!a.sample});save();draw();rep();$("#fmsg").innerHTML="<div class='msg g'>Sample records removed.</div>"}};
-window.addEventListener("storage",function(e){if(e.key==="nar.inbox")showInbox()});
+window.addEventListener("storage",function(e){if(e.key==="nar.inbox"&&e.newValue)autoImport()});
+window.addEventListener("focus",autoImport);
 showInbox();
 function bars(el,obj){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a]}),mx=obj[k[0]]||1;
 $(el).innerHTML=k.map(function(x){return "<div class='bar'><em>"+esc(x)+"</em><i style='width:"+(obj[x]/mx*60)+"%'></i>"+obj[x]+"</div>"}).join("")}
