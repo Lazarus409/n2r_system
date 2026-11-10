@@ -10,7 +10,7 @@ Registration and membership management for the ODASCO Past Students Association 
 | --- | --- | --- |
 | `/register` (also `/`) | Members | Three-step registration form with live validation, a review step and a data-use notice. This is the link you share. |
 | `/login` | Alumni office | Password sign-in (12-hour session). |
-| `/admin` | Alumni office | Directory with search, filters, sorting, pagination, bulk verify/delete/export and a details panel for viewing, editing and adding notes. Reports with charts, and an activity log of every change. New registrations appear automatically. |
+| `/admin` | Alumni office | Directory with search, filters, sorting, pagination, bulk verify/delete/export and a details panel for viewing, editing and adding notes. Reports with charts, an activity log of every change, and an **Account** tab where the admin updates their name, email, phone and password. New registrations appear automatically. |
 
 Light, dark and system themes are available on every page.
 
@@ -29,7 +29,8 @@ Open <http://localhost:3000/register> and <http://localhost:3000/admin>.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `ADMIN_PASSWORD` | Yes (production) | Admin sign-in password. Changing it signs everyone out. |
+| `ADMIN_PASSWORD` | Yes | Initial admin password, used for the first sign-in only. After that the admin sets their own password under **Account**, and this value stops working. |
+| `SESSION_SECRET` | Recommended | Long random string used to sign admin sessions. Falls back to `ADMIN_PASSWORD`. Keep it the same across restarts. |
 | `APP_URL` | Recommended | Public address, e.g. `https://alumni.example.org`, used for link previews. |
 | `DATABASE_PATH` | No | Where the SQLite file lives. Default `data/alumni.db`. |
 
@@ -42,7 +43,7 @@ The app needs a server with a **persistent disk** for the database.
 ```bash
 docker build -t alumni-register .
 docker run -d --name alumni -p 3000:3000 \
-  -e ADMIN_PASSWORD='a-long-passphrase' -e APP_URL='https://alumni.example.org' \
+  -e ADMIN_PASSWORD='initial-passphrase' -e SESSION_SECRET='long-random-string' -e APP_URL='https://alumni.example.org' \
   -v alumni-data:/app/data --restart unless-stopped alumni-register
 ```
 
@@ -61,6 +62,7 @@ Put it behind HTTPS (nginx, Caddy or your host's proxy) and make sure the proxy 
 ## Security
 
 - Admin pages and member data require a signed, HttpOnly session cookie (`Secure` in production).
+- The admin password is stored hashed with scrypt. Changing it signs out every other session immediately.
 - Sign-in and registration are rate-limited per IP, and failed sign-ins are recorded in the activity log.
 - Content-Security-Policy, HSTS, frame blocking and other security headers are set in `next.config.ts`.
 - Input is validated on the server, and the same rules are used in the form.

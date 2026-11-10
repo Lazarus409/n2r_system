@@ -45,6 +45,17 @@ const MIGRATIONS: string[] = [
      summary    TEXT NOT NULL DEFAULT ''
    );
    CREATE INDEX audit_at ON audit_log(at);`,
+  // v2: the admin account (single row). Created on first sign-in from ADMIN_PASSWORD, then managed in the dashboard.
+  `CREATE TABLE admin_account (
+     id                   INTEGER PRIMARY KEY CHECK (id = 1),
+     name                 TEXT NOT NULL,
+     email                TEXT NOT NULL DEFAULT '',
+     phone                TEXT NOT NULL DEFAULT '',
+     password_hash        TEXT NOT NULL,
+     session_version      INTEGER NOT NULL DEFAULT 1,
+     password_changed_at  TEXT,
+     updated_at           TEXT NOT NULL
+   );`,
 ];
 
 function open(): Database.Database {

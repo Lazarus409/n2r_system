@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/account";
 import { deleteAlumni, setVerified } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -6,6 +7,8 @@ export const runtime = "nodejs";
 
 // POST /api/alumni/bulk  { action: "verify" | "unverify" | "delete", ids: string[] }  (admin only)
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const ids: string[] = Array.isArray(body.ids) ? body.ids.filter((x: unknown) => typeof x === "string").slice(0, 5000) : [];
   if (!ids.length) return NextResponse.json({ message: "No records selected." }, { status: 400 });

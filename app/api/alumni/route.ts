@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/account";
 import { addAlumnus, deleteSamples, listAlumni } from "@/lib/store";
 import { validateRegistration } from "@/lib/validate";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
@@ -7,7 +8,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // GET /api/alumni -> full list (admin only; protected by middleware.ts)
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   return NextResponse.json(listAlumni(), { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -49,6 +52,8 @@ export async function POST(req: Request) {
 
 // DELETE /api/alumni?sample=1 -> remove all sample records (admin only)
 export async function DELETE(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   if (new URL(req.url).searchParams.get("sample") !== "1") {
     return NextResponse.json({ message: "Specify ?sample=1" }, { status: 400 });
   }

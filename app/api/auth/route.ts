@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
-import { adminPassword, checkPassword, createSession, SESSION_COOKIE } from "@/lib/auth";
+import { cookieOptions, createSession, SESSION_COOKIE, sessionSecret } from "@/lib/auth";
+import { checkLogin, sessionVersion } from "@/lib/account";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 import { recordLogin } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "true",
-  path: "/",
-};
-
 // POST /api/auth  { password }  -> sign in
 export async function POST(req: Request) {
-  if (!adminPassword()) {
+  if (!sessionSecret()) {
     return NextResponse.json({ message: "ADMIN_PASSWORD is not set on the server. Add it to .env.local and restart." }, { status: 503 });
   }
   const ip = clientIp(req);
@@ -27,13 +21,17 @@ export async function POST(req: Request) {
     );
   }
   const body = await req.json().catch(() => ({}));
-  if (!checkPassword(String(body.password ?? ""))) {
+  const result = await checkLogin(String(body.password ?? ""));
+  if (result.noPassword) {
+    return NextResponse.json({ message: "ADMIN_PASSWORD is not set on the server. Add it to .env.local and restart." }, { status: 503 });
+  }
+  if (!result.ok) {
     recordLogin(false, ip);
     await new Promise((r) => setTimeout(r, 800)); // slow down guessing
     return NextResponse.json({ message: "That password isn't right." }, { status: 401 });
   }
   recordLogin(true, ip);
-  const session = await createSession();
+  const session = await createSession(sessionVersion());
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, session.value, { ...cookieOptions, maxAge: session.maxAge });
   return res;

@@ -16,6 +16,8 @@ const ICONS: Record<string, [React.ReactNode, string]> = {
   "samples.removed": [<IconTrash key="h" size={16} />, "warn"],
   "auth.login": [<IconLock key="i" size={16} />, ""],
   "auth.failed": [<IconLock key="j" size={16} />, "warn"],
+  "account.password": [<IconLock key="k" size={16} />, "gold"],
+  "account.updated": [<IconEdit key="l" size={16} />, ""],
 };
 
 export default function Activity() {

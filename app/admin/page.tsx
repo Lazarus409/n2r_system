@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Brand from "@/app/Brand";
 import ThemeToggle from "@/app/ThemeToggle";
-import { IconActivity, IconAlert, IconChart, IconList, IconLogout, IconSparkle, IconX } from "@/app/components/Icons";
+import { IconActivity, IconAlert, IconChart, IconList, IconLogout, IconSparkle, IconUsers, IconX } from "@/app/components/Icons";
 import type { Alumnus } from "@/lib/types";
+import type { AdminAccount } from "@/lib/account";
 import Directory from "./_components/Directory";
 import RecordDrawer from "./_components/RecordDrawer";
 import Reports from "./_components/Reports";
 import Activity from "./_components/Activity";
+import Account from "./_components/Account";
 import { useToasts } from "./_components/Toasts";
 import { useConfirm } from "./_components/Confirm";
 import { api } from "./_components/util";
 
-type Tab = "dir" | "rep" | "act";
+type Tab = "dir" | "rep" | "act" | "acct";
 const POLL_MS = 15000;
 const SEEN_KEY = "nar.lastSeen";
 
@@ -29,6 +31,7 @@ export default function AdminPage() {
   const [toasts, toast] = useToasts();
   const [dialog, confirm] = useConfirm();
   const known = useRef<Set<string> | null>(null);
+  const [admin, setAdmin] = useState<AdminAccount | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -49,6 +52,7 @@ export default function AdminPage() {
   useEffect(() => {
     setSeen(readSeen());
     load();
+    api<AdminAccount>("/api/account").then(setAdmin).catch(() => {});
     const t = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
     const onVis = () => { if (!document.hidden) load(); };
     document.addEventListener("visibilitychange", onVis);
@@ -110,6 +114,7 @@ export default function AdminPage() {
     ["dir", "Directory", <IconList key="l" size={16} />, pending],
     ["rep", "Reports", <IconChart key="c" size={16} />, 0],
     ["act", "Activity", <IconActivity key="a" size={16} />, 0],
+    ["acct", "Account", <IconUsers key="u" size={16} />, admin?.usingInitialPassword ? 1 : 0],
   ];
 
   return (
@@ -120,13 +125,18 @@ export default function AdminPage() {
             <Brand />
             <div className="header-actions">
               <ThemeToggle />
+              {admin && (
+                <button className="btn on-dark hide-xs" onClick={() => setTab("acct")} title="Your account">
+                  <span className="avatar" style={{ width: 24, height: 24, fontSize: 10.5, background: "var(--gold)", color: "#132d0b" }}>{admin.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}</span>{admin.name}
+                </button>
+              )}
               <button className="btn on-dark" onClick={signOut} aria-label="Sign out"><IconLogout size={16} /><span className="hide-xs">Sign out</span></button>
             </div>
           </div>
           <nav className="tabs" role="tablist" aria-label="Dashboard sections">
             {TABS.map(([t, label, icon, badge]) => (
               <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
-                {icon}{label}{badge > 0 && <span className="count" title={`${badge} awaiting verification`}>{badge}</span>}
+                {icon}{label}{badge > 0 && <span className="count" title={t === "acct" ? "Set your own password" : `${badge} awaiting verification`}>{t === "acct" ? "!" : badge}</span>}
               </button>
             ))}
           </nav>
@@ -156,6 +166,7 @@ export default function AdminPage() {
           {tab === "dir" && <Directory data={data} seen={seen} onOpen={(a) => setOpenId(a.id)} onBulk={onBulk} onCopyLink={copyLink} />}
           {tab === "rep" && <Reports data={list} />}
           {tab === "act" && <Activity />}
+          {tab === "acct" && <Account toast={toast} onProfile={setAdmin} />}
         </div>
       </main>
 

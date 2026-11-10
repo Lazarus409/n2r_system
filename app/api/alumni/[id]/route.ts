@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/account";
 import { deleteAlumni, getAlumnus, setVerified, updateAlumnus } from "@/lib/store";
 import { validateRegistration } from "@/lib/validate";
 
@@ -8,13 +9,17 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 // GET /api/alumni/:id  (admin only)
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const a = getAlumnus((await params).id);
   return a ? NextResponse.json(a) : NextResponse.json({ message: "Not found" }, { status: 404 });
 }
 
 // PATCH /api/alumni/:id  { verified?: boolean, fields?: {...registration fields}, notes?: string }  (admin only)
 export async function PATCH(req: Request, { params }: Ctx) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
 
@@ -33,7 +38,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 // DELETE /api/alumni/:id  (admin only)
-export async function DELETE(_req: Request, { params }: Ctx) {
+export async function DELETE(req: Request, { params }: Ctx) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const n = deleteAlumni([(await params).id]);
   return n ? NextResponse.json({ removed: n }) : NextResponse.json({ message: "Not found" }, { status: 404 });
 }
