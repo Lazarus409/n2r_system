@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Brand from "@/app/Brand";
 import { CHAPTERS, GENDERS, INDUSTRIES, PROGRAMMES, REGIONS, yearGroups } from "@/lib/constants";
 import { validateRegistration } from "@/lib/validate";
 
@@ -55,7 +56,7 @@ export default function RegisterPage() {
     <>
       <header className="top solo">
         <div className="wrap narrow">
-          <h1>National Alumni Register</h1>
+          <Brand />
           <p>Fill in your details below to join the register. It takes about two minutes.</p>
         </div>
       </header>
@@ -94,13 +95,14 @@ export default function RegisterPage() {
                 </select>
               </label>
               <label>
-                Year group <small>Year you completed school</small>
+                Year group
                 <select name="year">
                   <Options list={yearGroups()} />
                 </select>
+                <small>The year you completed school</small>
               </label>
               <label>
-                Programme <small>&nbsp;</small>
+                Programme
                 <select name="prog">
                   <Options list={PROGRAMMES} />
                 </select>

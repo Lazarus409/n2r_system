@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Brand from "@/app/Brand";
 import { INDUSTRIES, REGIONS, yearGroups } from "@/lib/constants";
 import type { Alumnus } from "@/lib/types";
 
-type Tab = "dir" | "rep" | "sch";
+type Tab = "dir" | "rep";
 type SortKey = "name" | "year" | "prog" | "region" | "employer" | "phone" | "chapter" | "verified" | "submittedAt";
 
 const COLS: [SortKey, string][] = [
@@ -133,15 +134,15 @@ export default function AdminPage() {
       <header className="top">
         <div className="wrap">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-            <h1>National Alumni Register</h1>
-            <button className="btn alt" style={{ color: "var(--headtxt)", borderColor: "rgba(255,255,255,.3)" }} onClick={signOut}>Sign out</button>
+            <Brand />
+            <button className="btn alt" style={{ color: "var(--headtxt)", borderColor: "var(--gold)" }} onClick={signOut}>Sign out</button>
           </div>
           <p>
             Admin dashboard. New registrations appear here automatically. Share the{" "}
             <a href="/register" target="_blank">registration form</a> with members.
           </p>
           <nav className="tabs" role="tablist">
-            {([["dir", "Directory"], ["rep", "Reports"], ["sch", "Database design"]] as [Tab, string][]).map(([t, label]) => (
+            {([["dir", "Directory"], ["rep", "Reports"]] as [Tab, string][]).map(([t, label]) => (
               <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{label}</button>
             ))}
           </nav>
@@ -260,7 +261,6 @@ export default function AdminPage() {
           </section>
         )}
 
-        {tab === "sch" && <Schema />}
       </main>
     </>
   );
@@ -283,33 +283,5 @@ function Bars({ title, list, by }: { title: string; list: Alumnus[]; by: (a: Alu
         </div>
       ))}
     </div>
-  );
-}
-
-function Schema() {
-  const tables: [string, React.ReactNode[]][] = [
-    ["alumni", [<><b>alumni_id</b> PK</>, "full_name, gender, dob", "year_group_id FK", "programme, verified_on"]],
-    ["contacts", [<><b>contact_id</b> PK</>, "alumni_id FK", "phone, email, preferred_method"]],
-    ["locations", [<><b>location_id</b> PK</>, "alumni_id FK", "country, region, city"]],
-    ["careers", [<><b>career_id</b> PK</>, "alumni_id FK", "employer, job_title, industry, is_current"]],
-    ["year_groups", [<><b>year_group_id</b> PK</>, "graduation_year", "class_rep_id FK to alumni"]],
-    ["chapters", [<><b>chapter_id</b> PK</>, "name, region, chair_id FK"]],
-    ["memberships", [<><b>membership_id</b> PK</>, "alumni_id FK, chapter_id FK", "status, joined_on, dues_paid_until"]],
-    ["engagement", [<><b>event_id</b> PK</>, "alumni_id FK", "type (event, donation, mentoring)", "amount, date"]],
-    ["consents", [<><b>consent_id</b> PK</>, "alumni_id FK", "given_on, directory_visible", "sms_ok, email_ok"]],
-    ["audit_log", [<><b>log_id</b> PK</>, "user_id, action, table, record_id, timestamp"]],
-  ];
-  return (
-    <section>
-      <p>Relational design for when the register moves to a database. Each person has one ID, and everything else links back to it.</p>
-      <div className="tbl">
-        {tables.map(([name, rows]) => (
-          <div key={name}>
-            <h3>{name}</h3>
-            {rows.map((r, i) => <code key={i}>{r}</code>)}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }

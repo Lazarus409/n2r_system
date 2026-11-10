@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, type FormEvent } from "react";
+import Brand from "@/app/Brand";
 import { useSearchParams } from "next/navigation";
 
 function LoginForm() {
@@ -55,7 +56,7 @@ export default function LoginPage() {
     <>
       <header className="top solo">
         <div className="wrap" style={{ maxWidth: 420 }}>
-          <h1>National Alumni Register</h1>
+          <Brand />
           <p>Alumni office dashboard</p>
         </div>
       </header>
