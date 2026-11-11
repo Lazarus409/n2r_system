@@ -49,17 +49,17 @@ const EMPTY: Values = {
 
 const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
   {
-    title: "About You 🙂",
-    sub: "Tell us who you are and when you were at ODASCO.😊S",
+    title: "About You",
+    sub: "Tell us who you are and when you were at ODASCO.",
     fields: ["name", "gender", "year", "prog"],
   },
   {
-    title: "📞Contact & Location📍",
+    title: "Contact & Location",
     sub: "How the association can reach you, and where you are now.",
     fields: ["phone", "email", "region", "city"],
   },
   {
-    title: "Work & Chapter 💼",
+    title: "<b>Work & Chapter</b>",
     sub: "Your current work and the chapter you'd like to belong to.",
     fields: ["employer", "title", "industry", "chapter", "consent"],
   },
@@ -482,20 +482,27 @@ export default function RegisterPage() {
                     )}
                     {field(
                       "industry",
-                      selectOrType("industry", [...INDUSTRIES, OTHER_INDUSTRY], "Select industry…", {
-                        choice: OTHER_INDUSTRY,
-                        open: otherIndustry,
-                        pick: (v) => {
-                          const other = v === OTHER_INDUSTRY;
-                          setOtherIndustry(other);
-                          set("industry", other ? "" : v);
+                      selectOrType(
+                        "industry",
+                        [...INDUSTRIES, OTHER_INDUSTRY],
+                        "Select industry…",
+                        {
+                          choice: OTHER_INDUSTRY,
+                          open: otherIndustry,
+                          pick: (v) => {
+                            const other = v === OTHER_INDUSTRY;
+                            setOtherIndustry(other);
+                            set("industry", other ? "" : v);
+                          },
+                          value: values.industry,
+                          onType: (s) => set("industry", s),
+                          label: "Your industry",
+                          placeholder: "Type your industry, e.g. Hospitality",
                         },
-                        value: values.industry,
-                        onType: (s) => set("industry", s),
-                        label: "Your industry",
-                        placeholder: "Type your industry, e.g. Hospitality",
-                      }),
-                      otherIndustry ? { help: "Type the industry you work in." } : {},
+                      ),
+                      otherIndustry
+                        ? { help: "Type the industry you work in." }
+                        : {},
                     )}
                     {field(
                       "chapter",
@@ -514,7 +521,9 @@ export default function RegisterPage() {
                           setCountry(s);
                           set(
                             "chapter",
-                            s.trim() ? internationalChapter(s.trim()) : INTERNATIONAL_CHAPTER,
+                            s.trim()
+                              ? internationalChapter(s.trim())
+                              : INTERNATIONAL_CHAPTER,
                           );
                         },
                         label: "Country you live in",
