@@ -45,17 +45,17 @@ const EMPTY: Values = {
 
 const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
   {
-    title: "About you",
-    sub: "Tell us who you are and when you were at ODASCO.",
+    title: "About You 🙂",
+    sub: "Tell us who you are and when you were at ODASCO.😊S",
     fields: ["name", "gender", "year", "prog"],
   },
   {
-    title: "Contact & location",
+    title: "📞Contact & Location📍",
     sub: "How the association can reach you, and where you are now.",
     fields: ["phone", "email", "region", "city"],
   },
   {
-    title: "Work & chapter",
+    title: "Work & Chapter 💼",
     sub: "Your current work and the chapter you'd like to belong to.",
     fields: ["employer", "title", "industry", "chapter", "consent"],
   },
@@ -485,15 +485,16 @@ export default function RegisterPage() {
                       <summary>How we use your data</summary>
                       <ul>
                         <li>
-                          Your phone number and email are only seen by the
-                          alumni office.
+                          Your Phone Number and Email are <b>ONLY</b> seen by
+                          the
+                          <b>Alumni Office.</b>
                         </li>
                         <li>
-                          We use your details to verify membership, organise
-                          chapters and share association news.
+                          We use your <b>details to verify membership</b>,
                         </li>
                         <li>
-                          You can ask the alumni office to correct or delete
+                          You can ask the Alumni Office to{" "}
+                          <b>CORRECT or DELETE</b>
                           your record at any time.
                         </li>
                       </ul>
@@ -549,8 +550,11 @@ export default function RegisterPage() {
             </form>
           )}
           <p className="site-footer">
-            <IconLock size={13} /> Your details are sent securely to the ODASCO
-            Past Students Association.
+            <IconLock size={13} />{" "}
+            <b>
+              Your details are sent securely to the ODASCO Past Students
+              Association.
+            </b>
           </p>
         </div>
       </main>
