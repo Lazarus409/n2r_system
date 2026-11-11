@@ -1,5 +1,5 @@
 import {
-  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, PROGRAMMES, REGIONS,
+  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, OTHER_REGION, PROGRAMMES, REGIONS,
   chapterCountry, chapterGroup, internationalChapter, yearGroups,
 } from "./constants";
 import type { RegistrationField, RegistrationInput } from "./types";
@@ -22,7 +22,7 @@ export function normalise(raw: Record<string, unknown>): RegistrationInput {
     prog: str(raw.prog),
     phone: str(raw.phone, 20).replace(/[\s()-]/g, "").replace(/^\+233/, "0"),
     email: str(raw.email, 120).toLowerCase(),
-    region: str(raw.region),
+    region: str(raw.region, 60),
     city: str(raw.city, 80),
     employer: str(raw.employer, 120),
     title: str(raw.title, 120),
@@ -42,7 +42,12 @@ export function fieldErrors(v: RegistrationInput, opts: { requireConsent?: boole
   if (!PROGRAMMES.includes(v.prog)) e.prog = "Choose your programme.";
   if (!/^0[235]\d{8}$/.test(v.phone)) e.phone = "Enter a 10-digit Ghana number, e.g. 024 412 3456.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) e.email = "Enter a valid email address.";
-  if (!REGIONS.includes(v.region)) e.region = "Choose your region.";
+  if (!REGIONS.includes(v.region)) {
+    // Not a listed region, so it must be one typed in after choosing "Other".
+    if (v.region.length < 2 || v.region.toLowerCase() === OTHER_REGION.toLowerCase())
+      e.region = "Choose your region, or choose Other and type yours.";
+    else if (!TYPED.test(v.region)) e.region = "Use letters and numbers only.";
+  }
   if (v.city.length < 2) e.city = "Enter your city or town.";
   if (!INDUSTRIES.includes(v.industry)) {
     // Not a listed industry, so it must be one typed in after choosing "Other".

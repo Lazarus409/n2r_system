@@ -16,6 +16,10 @@ export const REGIONS = [
   "Western",
   "Western North",
 ];
+/** Extra region choice. People who pick it type their own region, and what they type is saved. */
+export const OTHER_REGION = "Other";
+/** True for a region someone typed in, i.e. one that isn't in REGIONS. */
+export const isOtherRegion = (region: string) => !!region && !REGIONS.includes(region);
 export const INDUSTRIES = [
   "Education",
   "Health",
