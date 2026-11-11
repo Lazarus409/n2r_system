@@ -3,7 +3,7 @@ export const INDUSTRIES = ["Education", "Health", "Finance", "Technology", "Agri
 export const CHAPTERS = ["Accra", "Kumasi", "Takoradi", "Cape Coast", "Ho", "Tamale", "International"];
 export const PROGRAMMES = ["General Arts", "General Science", "Business", "Visual Arts", "Home Economics", "Agriculture"];
 export const GENDERS = ["Female", "Male"];
-export const FIRST_YEAR = 1995;
+export const FIRST_YEAR = 1960;
 
 export function yearGroups(): number[] {
   const out: number[] = [];
