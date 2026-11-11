@@ -334,16 +334,17 @@ export default function RegisterPage() {
               </div>
               <h2 style={{ fontSize: 24 }}>
                 {done.updated
-                  ? "Your details have been updated"
-                  : `Welcome to the register, ${done.name.split(" ")[0]}!`}
+                  ? "Your Details Have Been Updated"
+                  : `Thank you for registering, ${done.name.split(" ")[0]}!`}
               </h2>
               <p
                 className="muted"
                 style={{ maxWidth: 460, margin: "8px auto 22px" }}
               >
-                Thank you for registering with the ODASCO Past Students
-                Association. The alumni office will verify your details, and
-                your chapter will be in touch about events and activities.
+                Your details have been successfully submitted to the ODASCO Past
+                Students Association. The Alumni Office will review and verify
+                your information. Once verified, your chapter will contact you
+                about upcoming events and activities.
               </p>
               <button
                 className="btn secondary"
