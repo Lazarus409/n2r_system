@@ -335,7 +335,7 @@ export default function RegisterPage() {
               <h2 style={{ fontSize: 24 }}>
                 {done.updated
                   ? "Your Details Have Been Updated"
-                  : `Thank you for registering, ${done.name.split(" ")[0]}!`}
+                  : `Thank You Yor Registering, ${done.name.split(" ")[0]}!`}
               </h2>
               <p
                 className="muted"
@@ -358,7 +358,7 @@ export default function RegisterPage() {
                   setStep(0);
                 }}
               >
-                Register another person
+                Register Another Person
               </button>
             </section>
           ) : (
