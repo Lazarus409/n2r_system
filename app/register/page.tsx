@@ -631,7 +631,7 @@ export default function RegisterPage() {
                         </li>
                         <li>
                           You can ask the Alumni Office to
-                          <b>CORRECT or DELETE</b>
+                          <b> CORRECT or DELETE </b>
                           your record at any time.
                         </li>
                       </ul>
