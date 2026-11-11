@@ -18,6 +18,7 @@ import {
   INDUSTRIES,
   INTERNATIONAL_CHAPTER,
   OTHER_INDUSTRY,
+  OTHER_REGION,
   PROGRAMMES,
   REGIONS,
   chapterGroup,
@@ -87,6 +88,8 @@ export default function RegisterPage() {
   const [values, setValues] = useState<Values>(EMPTY);
   // "Other" industry chosen: the text box holds the industry itself.
   const [otherIndustry, setOtherIndustry] = useState(false);
+  // "Other" region chosen: the text box holds the region itself.
+  const [otherRegion, setOtherRegion] = useState(false);
   // Country typed for the International chapter, kept as typed so spaces work while typing.
   const [country, setCountry] = useState("");
   const international = chapterGroup(values.chapter) === INTERNATIONAL_CHAPTER;
@@ -247,7 +250,7 @@ export default function RegisterPage() {
   // A dropdown where one choice (`other.choice`) opens a text box underneath for typing in.
   // While the box is open it takes the field's name, so "fix this" focus lands on the box.
   const selectOrType = (
-    f: "industry" | "chapter",
+    f: "industry" | "chapter" | "region",
     list: string[],
     placeholder: string,
     other: {
@@ -348,6 +351,7 @@ export default function RegisterPage() {
                   setDone(null);
                   setValues(EMPTY);
                   setOtherIndustry(false);
+                  setOtherRegion(false);
                   setCountry("");
                   setTouched(new Set());
                   setStep(0);
@@ -450,7 +454,23 @@ export default function RegisterPage() {
                       })}
                     </div>,
                   )}
-                  {field("region", select("region", REGIONS, "Select region…"))}
+                  {field(
+                    "region",
+                    selectOrType("region", [...REGIONS, OTHER_REGION], "Select region…", {
+                      choice: OTHER_REGION,
+                      open: otherRegion,
+                      pick: (v) => {
+                        const other = v === OTHER_REGION;
+                        setOtherRegion(other);
+                        set("region", other ? "" : v);
+                      },
+                      value: values.region,
+                      onType: (s) => set("region", s),
+                      label: "Your region",
+                      placeholder: "Type your region or state",
+                    }),
+                    otherRegion ? { help: "Type the region or state you live in." } : {},
+                  )}
                   {field(
                     "city",
                     text("city", {

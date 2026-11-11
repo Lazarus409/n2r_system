@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { IconAlert, IconCheck, IconEdit, IconMail, IconPhone, IconTrash, IconX } from "@/app/components/Icons";
 import {
-  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, PROGRAMMES, REGIONS,
-  chapterCountry, chapterGroup, internationalChapter, isOtherIndustry, yearGroups,
+  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, OTHER_REGION, PROGRAMMES, REGIONS,
+  chapterCountry, chapterGroup, internationalChapter, isOtherIndustry, isOtherRegion, yearGroups,
 } from "@/lib/constants";
 import { fieldErrors, formatPhone, normalise, type FieldErrors } from "@/lib/validate";
 import type { Alumnus, RegistrationField } from "@/lib/types";
@@ -19,11 +19,11 @@ type Props = {
   confirm: (o: { title: string; body: string; confirm: string; danger?: boolean }) => Promise<boolean>;
 };
 
-// `other`: the dropdown choice that opens a text box (an "Other" industry, or the country for International).
+// `other`: the dropdown choice that opens a text box (an "Other" region or industry, or the country for International).
 const EDITABLE: { f: RegistrationField; label: string; list?: (string | number)[]; other?: { choice: string; label: string } }[] = [
   { f: "name", label: "Full name" }, { f: "gender", label: "Gender", list: GENDERS }, { f: "year", label: "Year group", list: yearGroups() },
   { f: "prog", label: "Programme", list: PROGRAMMES }, { f: "phone", label: "Phone" }, { f: "email", label: "Email" },
-  { f: "region", label: "Region", list: REGIONS }, { f: "city", label: "City or town" }, { f: "employer", label: "Employer" },
+  { f: "region", label: "Region", list: [...REGIONS, OTHER_REGION], other: { choice: OTHER_REGION, label: "Type the region" } }, { f: "city", label: "City or town" }, { f: "employer", label: "Employer" },
   { f: "title", label: "Job title" }, { f: "industry", label: "Industry", list: [...INDUSTRIES, OTHER_INDUSTRY], other: { choice: OTHER_INDUSTRY, label: "Type the industry" } },
   { f: "chapter", label: "Chapter", list: CHAPTERS, other: { choice: INTERNATIONAL_CHAPTER, label: "Type the country" } },
 ];
@@ -52,6 +52,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
     const d: Record<string, string> = Object.fromEntries(EDITABLE.map(({ f }) => [f, String(a[f as keyof Alumnus] ?? "")]));
     // Split typed-in values back into "dropdown choice" + "text box".
     if (isOtherIndustry(a.industry)) Object.assign(d, { industry: OTHER_INDUSTRY, industry_typed: a.industry });
+    if (isOtherRegion(a.region)) Object.assign(d, { region: OTHER_REGION, region_typed: a.region });
     if (chapterGroup(a.chapter) === INTERNATIONAL_CHAPTER)
       Object.assign(d, { chapter: INTERNATIONAL_CHAPTER, chapter_typed: chapterCountry(a.chapter) });
     setDraft(d);
@@ -64,6 +65,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
     const typed = (f: string) => (draft[`${f}_typed`] ?? "").trim();
     const fields: Record<string, string> = Object.fromEntries(EDITABLE.map(({ f }) => [f, draft[f]]));
     if (fields.industry === OTHER_INDUSTRY) fields.industry = typed("industry");
+    if (fields.region === OTHER_REGION) fields.region = typed("region");
     if (fields.chapter === INTERNATIONAL_CHAPTER && typed("chapter")) fields.chapter = internationalChapter(typed("chapter"));
     const v = normalise(fields);
     const errs = fieldErrors(v, { requireConsent: false });
