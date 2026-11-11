@@ -624,16 +624,15 @@ export default function RegisterPage() {
                       <ul>
                         <li>
                           Your Phone Number and Email are <b>ONLY</b> seen by
-                          the
-                          <b>Alumni Office.</b>
+                          the &nbsp;<b>Alumni Office.</b>
                         </li>
                         <li>
                           We use your <b>details to verify membership</b>,
                         </li>
                         <li>
-                          You can ask the Alumni Office to{" "}
+                          You can ask the Alumni Office to
                           <b>CORRECT or DELETE</b>
-                          your record at any time.
+                          &nbsp your record at any time.
                         </li>
                       </ul>
                     </details>
