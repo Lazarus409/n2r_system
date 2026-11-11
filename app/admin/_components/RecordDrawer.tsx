@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { IconAlert, IconCheck, IconEdit, IconMail, IconPhone, IconTrash, IconX } from "@/app/components/Icons";
-import { CHAPTERS, GENDERS, INDUSTRIES, PROGRAMMES, REGIONS, yearGroups } from "@/lib/constants";
+import {
+  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, PROGRAMMES, REGIONS,
+  chapterCountry, chapterGroup, internationalChapter, isOtherIndustry, yearGroups,
+} from "@/lib/constants";
 import { fieldErrors, formatPhone, normalise, type FieldErrors } from "@/lib/validate";
 import type { Alumnus, RegistrationField } from "@/lib/types";
 import { api, fullDate, initials, timeAgo } from "./util";
@@ -16,11 +19,13 @@ type Props = {
   confirm: (o: { title: string; body: string; confirm: string; danger?: boolean }) => Promise<boolean>;
 };
 
-const EDITABLE: { f: RegistrationField; label: string; list?: (string | number)[] }[] = [
+// `other`: the dropdown choice that opens a text box (an "Other" industry, or the country for International).
+const EDITABLE: { f: RegistrationField; label: string; list?: (string | number)[]; other?: { choice: string; label: string } }[] = [
   { f: "name", label: "Full name" }, { f: "gender", label: "Gender", list: GENDERS }, { f: "year", label: "Year group", list: yearGroups() },
   { f: "prog", label: "Programme", list: PROGRAMMES }, { f: "phone", label: "Phone" }, { f: "email", label: "Email" },
   { f: "region", label: "Region", list: REGIONS }, { f: "city", label: "City or town" }, { f: "employer", label: "Employer" },
-  { f: "title", label: "Job title" }, { f: "industry", label: "Industry", list: INDUSTRIES }, { f: "chapter", label: "Chapter", list: CHAPTERS },
+  { f: "title", label: "Job title" }, { f: "industry", label: "Industry", list: [...INDUSTRIES, OTHER_INDUSTRY], other: { choice: OTHER_INDUSTRY, label: "Type the industry" } },
+  { f: "chapter", label: "Chapter", list: CHAPTERS, other: { choice: INTERNATIONAL_CHAPTER, label: "Type the country" } },
 ];
 
 export default function RecordDrawer({ record: a, onClose, onChanged, toast, confirm }: Props) {
@@ -44,19 +49,29 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
   }, []);
 
   function startEdit() {
-    setDraft(Object.fromEntries(EDITABLE.map(({ f }) => [f, String(a[f as keyof Alumnus] ?? "")])));
+    const d: Record<string, string> = Object.fromEntries(EDITABLE.map(({ f }) => [f, String(a[f as keyof Alumnus] ?? "")]));
+    // Split typed-in values back into "dropdown choice" + "text box".
+    if (isOtherIndustry(a.industry)) Object.assign(d, { industry: OTHER_INDUSTRY, industry_typed: a.industry });
+    if (chapterGroup(a.chapter) === INTERNATIONAL_CHAPTER)
+      Object.assign(d, { chapter: INTERNATIONAL_CHAPTER, chapter_typed: chapterCountry(a.chapter) });
+    setDraft(d);
     setErrors({});
     setEditing(true);
   }
 
   async function save() {
-    const v = normalise(draft);
+    // Join each dropdown choice with its text box into the value that gets saved.
+    const typed = (f: string) => (draft[`${f}_typed`] ?? "").trim();
+    const fields: Record<string, string> = Object.fromEntries(EDITABLE.map(({ f }) => [f, draft[f]]));
+    if (fields.industry === OTHER_INDUSTRY) fields.industry = typed("industry");
+    if (fields.chapter === INTERNATIONAL_CHAPTER && typed("chapter")) fields.chapter = internationalChapter(typed("chapter"));
+    const v = normalise(fields);
     const errs = fieldErrors(v, { requireConsent: false });
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy("save");
     try {
-      const updated = await api<Alumnus>(`/api/alumni/${a.id}`, { method: "PATCH", json: { fields: draft } });
+      const updated = await api<Alumnus>(`/api/alumni/${a.id}`, { method: "PATCH", json: { fields } });
       onChanged(updated);
       setEditing(false);
       toast("success", "Changes saved.");
@@ -114,7 +129,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
         <div className="drawer-body">
           {editing ? (
             <div className="fields" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-              {EDITABLE.map(({ f, label, list }) => (
+              {EDITABLE.map(({ f, label, list, other }) => (
                 <div className="field" key={f}>
                   <label htmlFor={`e-${f}`}>{label}</label>
                   {list ? (
@@ -123,6 +138,10 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
                     </select>
                   ) : (
                     <input id={`e-${f}`} value={draft[f]} aria-invalid={!!errors[f] || undefined} onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))} />
+                  )}
+                  {other && draft[f] === other.choice && (
+                    <input aria-label={other.label} placeholder={other.label} value={draft[`${f}_typed`] ?? ""} aria-invalid={!!errors[f] || undefined}
+                      style={{ marginTop: 6 }} onChange={(e) => setDraft((d) => ({ ...d, [`${f}_typed`]: e.target.value }))} />
                   )}
                   {errors[f] && <span className="err"><IconAlert size={14} />{errors[f]}</span>}
                 </div>

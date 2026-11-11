@@ -16,8 +16,12 @@ import {
   CHAPTERS,
   GENDERS,
   INDUSTRIES,
+  INTERNATIONAL_CHAPTER,
+  OTHER_INDUSTRY,
   PROGRAMMES,
   REGIONS,
+  chapterGroup,
+  internationalChapter,
   yearGroups,
 } from "@/lib/constants";
 import { fieldErrors, formatPhone, normalise } from "@/lib/validate";
@@ -81,6 +85,11 @@ const asRaw = (v: Values) => v as unknown as Record<string, unknown>;
 
 export default function RegisterPage() {
   const [values, setValues] = useState<Values>(EMPTY);
+  // "Other" industry chosen: the text box holds the industry itself.
+  const [otherIndustry, setOtherIndustry] = useState(false);
+  // Country typed for the International chapter, kept as typed so spaces work while typing.
+  const [country, setCountry] = useState("");
+  const international = chapterGroup(values.chapter) === INTERNATIONAL_CHAPTER;
   const [touched, setTouched] = useState<Set<RegistrationField>>(new Set());
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -235,6 +244,59 @@ export default function RegisterPage() {
       ))}
     </select>
   );
+  // A dropdown where one choice (`other.choice`) opens a text box underneath for typing in.
+  // While the box is open it takes the field's name, so "fix this" focus lands on the box.
+  const selectOrType = (
+    f: "industry" | "chapter",
+    list: string[],
+    placeholder: string,
+    other: {
+      choice: string;
+      open: boolean;
+      pick: (value: string) => void;
+      value: string;
+      onType: (typed: string) => void;
+      label: string;
+      placeholder: string;
+    },
+  ) => (
+    <>
+      <select
+        {...common(f)}
+        name={other.open ? `${f}Choice` : f}
+        value={other.open ? other.choice : String(values[f])}
+        onChange={(e) => {
+          other.pick(e.target.value);
+          if (e.target.value === other.choice)
+            requestAnimationFrame(() =>
+              document.getElementById(`${f}-other`)?.focus(),
+            );
+          else touch(f);
+        }}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {list.map((x) => (
+          <option key={x} value={x}>
+            {x}
+          </option>
+        ))}
+      </select>
+      {other.open && (
+        <input
+          {...common(f)}
+          id={`${f}-other`}
+          aria-label={other.label}
+          placeholder={other.placeholder}
+          maxLength={60}
+          value={other.value}
+          onChange={(e) => other.onType(e.target.value)}
+          style={{ marginTop: 8 }}
+        />
+      )}
+    </>
+  );
   const text = (
     f: RegistrationField,
     props: React.InputHTMLAttributes<HTMLInputElement> = {},
@@ -285,6 +347,8 @@ export default function RegisterPage() {
                 onClick={() => {
                   setDone(null);
                   setValues(EMPTY);
+                  setOtherIndustry(false);
+                  setCountry("");
                   setTouched(new Set());
                   setStep(0);
                 }}
@@ -418,12 +482,49 @@ export default function RegisterPage() {
                     )}
                     {field(
                       "industry",
-                      select("industry", INDUSTRIES, "Select industry…"),
+                      selectOrType("industry", [...INDUSTRIES, OTHER_INDUSTRY], "Select industry…", {
+                        choice: OTHER_INDUSTRY,
+                        open: otherIndustry,
+                        pick: (v) => {
+                          const other = v === OTHER_INDUSTRY;
+                          setOtherIndustry(other);
+                          set("industry", other ? "" : v);
+                        },
+                        value: values.industry,
+                        onType: (s) => set("industry", s),
+                        label: "Your industry",
+                        placeholder: "Type your industry, e.g. Hospitality",
+                      }),
+                      otherIndustry ? { help: "Type the industry you work in." } : {},
                     )}
                     {field(
                       "chapter",
-                      select("chapter", CHAPTERS, "Select chapter…"),
-                      { help: "Usually the one closest to where you live." },
+                      selectOrType("chapter", CHAPTERS, "Select chapter…", {
+                        choice: INTERNATIONAL_CHAPTER,
+                        open: international,
+                        pick: (v) =>
+                          set(
+                            "chapter",
+                            v === INTERNATIONAL_CHAPTER && country.trim()
+                              ? internationalChapter(country.trim())
+                              : v,
+                          ),
+                        value: country,
+                        onType: (s) => {
+                          setCountry(s);
+                          set(
+                            "chapter",
+                            s.trim() ? internationalChapter(s.trim()) : INTERNATIONAL_CHAPTER,
+                          );
+                        },
+                        label: "Country you live in",
+                        placeholder: "Type your country, e.g. Canada",
+                      }),
+                      {
+                        help: international
+                          ? "Type the country you live in."
+                          : "Usually the one closest to where you live.",
+                      },
                     )}
                   </div>
 
