@@ -74,7 +74,7 @@ const LABELS: Record<RegistrationField, string> = {
   phone: "Phone Number",
   email: "Email Address",
   region: "Region",
-  city: "City or Town",
+  city: "City/Town",
   employer: "Employer",
   title: "Job Title",
   industry: "Industry",
@@ -624,7 +624,7 @@ export default function RegisterPage() {
                       <ul>
                         <li>
                           Your Phone Number and Email are <b>ONLY</b> seen by
-                          the &nbsp;<b>Alumni Office.</b>
+                          the <b>Alumni Office.</b>
                         </li>
                         <li>
                           We use your <b>details to verify membership</b>,
@@ -632,7 +632,7 @@ export default function RegisterPage() {
                         <li>
                           You can ask the Alumni Office to
                           <b>CORRECT or DELETE</b>
-                          &nbsp your record at any time.
+                          your record at any time.
                         </li>
                       </ul>
                     </details>
