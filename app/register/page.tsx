@@ -472,7 +472,7 @@ export default function RegisterPage() {
                         type: "tel",
                         inputMode: "tel",
                         autoComplete: "tel",
-                        placeholder: "024 412 3456",
+                        placeholder: "024 412 3456 or +44 7700 900123",
                         onBlur: () => {
                           touch("phone");
                           const n = normalise({ phone: values.phone }).phone;
@@ -480,6 +480,9 @@ export default function RegisterPage() {
                         },
                       })}
                     </div>,
+                    {
+                      help: "Outside Ghana? Start with + and your country code.",
+                    },
                   )}
                   {field(
                     "email",

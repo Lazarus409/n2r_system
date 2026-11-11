@@ -6,6 +6,19 @@ import {
 import type { RegistrationField, RegistrationInput } from "./types";
 
 const str = (v: unknown, max = 120) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, max);
+/** Ghana numbers are stored in local form: "0244123456". */
+const GHANA_PHONE = /^0[235]\d{8}$/;
+/** Any other country: "+" then the country code and number, 7–15 digits in all (the international standard). */
+const INTL_PHONE = /^\+[1-9]\d{6,14}$/;
+/**
+ * Strips spaces, dots, dashes and brackets, turns a leading "00" into "+",
+ * and stores Ghana numbers typed with +233 in local form ("+233 24 412 3456" -> "0244123456").
+ */
+function cleanPhone(p: string) {
+  const s = p.replace(/[\s().-]/g, "").replace(/^00/, "+");
+  return /^\+2330?\d{9}$/.test(s) ? "0" + s.slice(-9) : s;
+}
+
 /** Allowed characters for things people type in themselves (an industry or a country). */
 const TYPED = /^[\p{L}\p{M}\p{N}&' .,/()-]+$/u;
 /** Tidies "International ( canada )" into "International (canada)". Other chapters are unchanged. */
@@ -22,7 +35,7 @@ export function normalise(raw: Record<string, unknown>): RegistrationInput {
     gender: str(raw.gender),
     year: Number(raw.year),
     prog: str(raw.prog),
-    phone: str(raw.phone, 20).replace(/[\s()-]/g, "").replace(/^\+233/, "0"),
+    phone: cleanPhone(str(raw.phone, 24)),
     email: str(raw.email, 120).toLowerCase(),
     region: str(raw.region, 60),
     city: str(raw.city, 80),
@@ -56,7 +69,10 @@ export function fieldErrors(v: RegistrationInput, opts: { requireConsent?: boole
   if (!GENDERS.includes(v.gender)) e.gender = "Choose an option.";
   if (!yearGroups().includes(v.year)) e.year = "Choose your year group.";
   if (!PROGRAMMES.includes(v.prog)) e.prog = "Choose your programme.";
-  if (!/^0[235]\d{8}$/.test(v.phone)) e.phone = "Enter a 10-digit Ghana number, e.g. 024 412 3456.";
+  if (!GHANA_PHONE.test(v.phone) && !INTL_PHONE.test(v.phone))
+    e.phone = v.phone.startsWith("+")
+      ? "Enter the full number with its country code, e.g. +44 7700 900123."
+      : "Enter a Ghana number (e.g. 024 412 3456), or + and the country code for other countries.";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) e.email = "Enter a valid email address.";
   if (!REGIONS.includes(v.region)) {
     // Not a listed region, so it must be one typed in after choosing "Other".
@@ -89,5 +105,6 @@ export function validateRegistration(raw: Record<string, unknown>, opts?: { requ
 
 /** "0244123456" -> "024 412 3456" */
 export function formatPhone(p: string) {
+  // International numbers are shown as stored ("+14165550123"): grouping differs by country.
   return /^\d{10}$/.test(p) ? `${p.slice(0, 3)} ${p.slice(3, 6)} ${p.slice(6)}` : p;
 }
