@@ -10,7 +10,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   // Public address of the site, used for link previews (WhatsApp, Facebook). Set APP_URL in production.
-  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000"),
   title: { default: "National Alumni Register", template: "%s · National Alumni Register" },
   description: "Join the ODASCO Past Students Association National Alumni Register.",
   applicationName: "National Alumni Register",

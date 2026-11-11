@@ -1,0 +1,43 @@
+# Render Blueprint for the National Alumni Register.
+# Deploy: Render dashboard → New → Blueprint → pick this repo.
+#
+# The SQLite database lives on a persistent disk at /var/data. Disks need a paid
+# instance (Starter or above); on the free plan the database would be wiped on every deploy.
+services:
+  - type: web
+    name: alumni-register
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: >-
+      npm ci --include=dev &&
+      npm run build &&
+      cp -r .next/static .next/standalone/.next/static &&
+      cp -r public .next/standalone/public
+    startCommand: node .next/standalone/server.js
+    healthCheckPath: /api/health
+    disk:
+      name: alumni-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /var/data/alumni.db
+      - key: SESSION_SECRET
+        generateValue: true
+      # Initial admin password (first sign-in only). Render asks for it when the Blueprint is created.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Optional: set to your custom domain later. Defaults to the onrender.com address.
+      - key: APP_URL
+        sync: false

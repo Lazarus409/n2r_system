@@ -21,7 +21,16 @@ export async function POST(req: Request) {
     );
   }
   const body = await req.json().catch(() => ({}));
-  const result = await checkLogin(String(body.password ?? ""));
+  let result: Awaited<ReturnType<typeof checkLogin>>;
+  try {
+    result = await checkLogin(String(body.password ?? ""));
+  } catch (err) {
+    console.error("[auth] Sign-in failed: could not use the database", err);
+    return NextResponse.json(
+      { message: "The server can't open its database. Check DATABASE_PATH and the disk in your hosting settings." },
+      { status: 500 }
+    );
+  }
   if (result.noPassword) {
     return NextResponse.json({ message: "ADMIN_PASSWORD is not set on the server. Add it to .env.local and restart." }, { status: 503 });
   }
