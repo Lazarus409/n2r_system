@@ -46,7 +46,7 @@ const EMPTY: Values = {
 const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
   {
     title: "About you",
-    sub: "Tell us who you are and when you were at ODASCO.",
+    sub: "Tell us who you are and when you were at SAMMO.",
     fields: ["name", "gender", "year", "prog"],
   },
   {
