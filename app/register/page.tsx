@@ -60,7 +60,7 @@ const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
     fields: ["phone", "email", "region", "city"],
   },
   {
-    title: "<b>Work & Chapter</b>",
+    title: "Work & Chapter",
     sub: "Your current work and the chapter you'd like to belong to.",
     fields: ["employer", "title", "industry", "chapter", "consent"],
   },
@@ -456,20 +456,27 @@ export default function RegisterPage() {
                   )}
                   {field(
                     "region",
-                    selectOrType("region", [...REGIONS, OTHER_REGION], "Select region…", {
-                      choice: OTHER_REGION,
-                      open: otherRegion,
-                      pick: (v) => {
-                        const other = v === OTHER_REGION;
-                        setOtherRegion(other);
-                        set("region", other ? "" : v);
+                    selectOrType(
+                      "region",
+                      [...REGIONS, OTHER_REGION],
+                      "Select region…",
+                      {
+                        choice: OTHER_REGION,
+                        open: otherRegion,
+                        pick: (v) => {
+                          const other = v === OTHER_REGION;
+                          setOtherRegion(other);
+                          set("region", other ? "" : v);
+                        },
+                        value: values.region,
+                        onType: (s) => set("region", s),
+                        label: "Your region",
+                        placeholder: "Type your region or state",
                       },
-                      value: values.region,
-                      onType: (s) => set("region", s),
-                      label: "Your region",
-                      placeholder: "Type your region or state",
-                    }),
-                    otherRegion ? { help: "Type the region or state you live in." } : {},
+                    ),
+                    otherRegion
+                      ? { help: "Type the region or state you live in." }
+                      : {},
                   )}
                   {field(
                     "city",
