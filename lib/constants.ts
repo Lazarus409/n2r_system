@@ -1,3 +1,21 @@
+/** Titles shown before a person's name. */
+export const HONORIFICS = ["Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", "Rev", "Pastor", "Hon", "Nana"];
+/** Extra title choice. People who pick it type their own title, and what they type is saved. */
+export const OTHER_HONORIFIC = "Other";
+/** True for a title someone typed in, i.e. one that isn't in HONORIFICS. */
+export const isOtherHonorific = (honorific: string) => !!honorific && !HONORIFICS.includes(honorific);
+/** "Dr" + "Ama Mensah" -> "Dr Ama Mensah". */
+export const fullName = (a: { honorific?: string; name: string }) => (a.honorific ? `${a.honorific} ${a.name}` : a.name);
+
+export const EMPLOYMENT_STATUSES = [
+  "Employed (full-time)",
+  "Employed (part-time)",
+  "Self-employed",
+  "Unemployed",
+  "Student",
+  "Retired",
+];
+
 export const REGIONS = [
   "Ahafo",
   "Ashanti",

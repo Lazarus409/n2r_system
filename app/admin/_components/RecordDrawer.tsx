@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { IconAlert, IconCheck, IconEdit, IconMail, IconPhone, IconTrash, IconX } from "@/app/components/Icons";
 import {
-  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, OTHER_REGION, PROGRAMMES, REGIONS,
-  chapterCountry, chapterGroup, internationalChapter, isOtherIndustry, isOtherRegion, yearGroups,
+  CHAPTERS, EMPLOYMENT_STATUSES, GENDERS, HONORIFICS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_HONORIFIC, OTHER_INDUSTRY,
+  OTHER_REGION, PROGRAMMES, REGIONS, chapterCountry, chapterGroup, fullName, internationalChapter, isOtherHonorific,
+  isOtherIndustry, isOtherRegion, yearGroups,
 } from "@/lib/constants";
 import { fieldErrors, formatPhone, normalise, type FieldErrors } from "@/lib/validate";
 import type { Alumnus, RegistrationField } from "@/lib/types";
@@ -21,9 +22,11 @@ type Props = {
 
 // `other`: the dropdown choice that opens a text box (an "Other" region or industry, or the country for International).
 const EDITABLE: { f: RegistrationField; label: string; list?: (string | number)[]; other?: { choice: string; label: string } }[] = [
+  { f: "honorific", label: "Title", list: ["", ...HONORIFICS, OTHER_HONORIFIC], other: { choice: OTHER_HONORIFIC, label: "Type the title" } },
   { f: "name", label: "Full name" }, { f: "gender", label: "Gender", list: GENDERS }, { f: "year", label: "Year group", list: yearGroups() },
   { f: "prog", label: "Programme", list: PROGRAMMES }, { f: "phone", label: "Phone" }, { f: "email", label: "Email" },
-  { f: "region", label: "Region", list: [...REGIONS, OTHER_REGION], other: { choice: OTHER_REGION, label: "Type the region" } }, { f: "city", label: "City or town" }, { f: "employer", label: "Employer" },
+  { f: "region", label: "Region", list: [...REGIONS, OTHER_REGION], other: { choice: OTHER_REGION, label: "Type the region" } }, { f: "city", label: "City or town" },
+  { f: "employment", label: "Employment status", list: ["", ...EMPLOYMENT_STATUSES] }, { f: "employer", label: "Employer" },
   { f: "title", label: "Job title" }, { f: "industry", label: "Industry", list: [...INDUSTRIES, OTHER_INDUSTRY], other: { choice: OTHER_INDUSTRY, label: "Type the industry" } },
   { f: "chapter", label: "Chapter", list: CHAPTERS, other: { choice: INTERNATIONAL_CHAPTER, label: "Type the country" } },
 ];
@@ -53,6 +56,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
     // Split typed-in values back into "dropdown choice" + "text box".
     if (isOtherIndustry(a.industry)) Object.assign(d, { industry: OTHER_INDUSTRY, industry_typed: a.industry });
     if (isOtherRegion(a.region)) Object.assign(d, { region: OTHER_REGION, region_typed: a.region });
+    if (isOtherHonorific(a.honorific)) Object.assign(d, { honorific: OTHER_HONORIFIC, honorific_typed: a.honorific });
     if (chapterGroup(a.chapter) === INTERNATIONAL_CHAPTER)
       Object.assign(d, { chapter: INTERNATIONAL_CHAPTER, chapter_typed: chapterCountry(a.chapter) });
     setDraft(d);
@@ -66,6 +70,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
     const fields: Record<string, string> = Object.fromEntries(EDITABLE.map(({ f }) => [f, draft[f]]));
     if (fields.industry === OTHER_INDUSTRY) fields.industry = typed("industry");
     if (fields.region === OTHER_REGION) fields.region = typed("region");
+    if (fields.honorific === OTHER_HONORIFIC) fields.honorific = typed("honorific");
     if (fields.chapter === INTERNATIONAL_CHAPTER && typed("chapter")) fields.chapter = internationalChapter(typed("chapter"));
     const v = normalise(fields);
     const errs = fieldErrors(v, { requireConsent: false });
@@ -118,7 +123,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
         <div className="drawer-head">
           <span className="avatar lg">{initials(a.name)}</span>
           <div className="grow">
-            <h2 id="drawer-title" style={{ margin: 0 }}>{a.name}</h2>
+            <h2 id="drawer-title" style={{ margin: 0 }}>{fullName(a)}</h2>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
               <span className={`badge ${a.verified ? "ok" : "pend"}`}>{a.verified ? <><IconCheck size={12} />Verified</> : "Awaiting verification"}</span>
               <span className="muted" style={{ fontSize: 13 }}>Class of {a.year} · {a.chapter} chapter</span>
@@ -136,7 +141,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
                   <label htmlFor={`e-${f}`}>{label}</label>
                   {list ? (
                     <select id={`e-${f}`} value={draft[f]} aria-invalid={!!errors[f] || undefined} onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}>
-                      {list.map((x) => <option key={x} value={x}>{x}</option>)}
+                      {list.map((x) => <option key={x} value={x}>{x === "" ? "Not given" : x}</option>)}
                     </select>
                   ) : (
                     <input id={`e-${f}`} value={draft[f]} aria-invalid={!!errors[f] || undefined} onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))} />
@@ -165,6 +170,7 @@ export default function RecordDrawer({ record: a, onClose, onChanged, toast, con
                   <dt>Gender</dt><dd>{a.gender}</dd>
                   <dt>Year group</dt><dd>{a.year}</dd>
                   <dt>Programme</dt><dd>{a.prog}</dd>
+                  <dt>Employment</dt><dd>{a.employment || <span className="muted">Not given</span>}</dd>
                   <dt>Employer</dt><dd>{a.employer || <span className="muted">Not given</span>}</dd>
                   <dt>Job title</dt><dd>{a.title || <span className="muted">Not given</span>}</dd>
                   <dt>Industry</dt><dd>{a.industry}</dd>

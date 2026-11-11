@@ -6,7 +6,7 @@ import {
   IconInbox, IconSearch, IconShield, IconTrash, IconUserPlus, IconUsers, IconX,
 } from "@/app/components/Icons";
 import {
-  CHAPTERS, INDUSTRIES, OTHER_INDUSTRY, OTHER_REGION, REGIONS, chapterGroup, isOtherIndustry, isOtherRegion, yearGroups,
+  CHAPTERS, INDUSTRIES, OTHER_INDUSTRY, OTHER_REGION, REGIONS, chapterGroup, fullName, isOtherIndustry, isOtherRegion, yearGroups,
 } from "@/lib/constants";
 import { formatPhone } from "@/lib/validate";
 import type { Alumnus } from "@/lib/types";
@@ -44,7 +44,7 @@ export default function Directory({ data, seen, onOpen, onBulk, onCopyLink }: Pr
       .filter((a) =>
         (!f.year || String(a.year) === f.year) && (!f.region || (f.region === OTHER_REGION ? isOtherRegion(a.region) : a.region === f.region)) && (!f.industry || (f.industry === OTHER_INDUSTRY ? isOtherIndustry(a.industry) : a.industry === f.industry)) &&
         (!f.chapter || chapterGroup(a.chapter) === f.chapter) && (!f.status || (f.status === "v") === a.verified) &&
-        terms.every((t) => [a.name, a.employer, a.city, a.region, a.title, a.industry, a.chapter, a.email, a.phone, a.prog, String(a.year)].join(" ").toLowerCase().includes(t)))
+        terms.every((t) => [a.honorific, a.name, a.employment, a.employer, a.city, a.region, a.title, a.industry, a.chapter, a.email, a.phone, a.prog, String(a.year)].join(" ").toLowerCase().includes(t)))
       .sort((x, y) => {
         const a = x[sort.k] ?? "", b = y[sort.k] ?? "";
         return (a > b ? 1 : a < b ? -1 : 0) * sort.d;
@@ -208,7 +208,7 @@ export default function Directory({ data, seen, onOpen, onBulk, onCopyLink }: Pr
                     <div className="person">
                       <span className="avatar">{initials(a.name)}</span>
                       <div>
-                        <b>{a.name}</b> {isNew(a) && <span className="badge new">New</span>}
+                        <b>{fullName(a)}</b> {isNew(a) && <span className="badge new">New</span>}
                         <span className="sub">{a.prog}</span>
                       </div>
                     </div>

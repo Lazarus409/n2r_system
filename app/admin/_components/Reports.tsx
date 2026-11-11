@@ -127,6 +127,7 @@ export default function Reports({ data }: { data: Alumnus[] }) {
   const groups: [string, string, Datum[]][] = [
     ["Alumni by region", "Where members live now", count(data, (a) => a.region)],
     ["Alumni by chapter", "Chapter membership", count(data, (a) => chapterGroup(a.chapter))],
+    ["Alumni by employment status", "Current employment", count(data, (a) => a.employment || "Not given")],
     ["Alumni by industry", "Current sector of work", count(data, (a) => a.industry)],
     ["Alumni by programme", "Programme studied at ODASCO", count(data, (a) => a.prog)],
   ];

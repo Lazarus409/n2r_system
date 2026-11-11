@@ -56,6 +56,9 @@ const MIGRATIONS: string[] = [
      password_changed_at  TEXT,
      updated_at           TEXT NOT NULL
    );`,
+  // v3: title before the name (Mr, Dr, ...) and employment status. Existing records start blank.
+  `ALTER TABLE alumni ADD COLUMN honorific TEXT NOT NULL DEFAULT '';
+   ALTER TABLE alumni ADD COLUMN employment TEXT NOT NULL DEFAULT '';`,
 ];
 
 function open(): Database.Database {

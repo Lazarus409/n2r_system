@@ -2,7 +2,7 @@
 // Usage: npm run seed
 import { randomUUID } from "crypto";
 import { db } from "../lib/db";
-import { CHAPTERS, INDUSTRIES, PROGRAMMES, REGIONS } from "../lib/constants";
+import { CHAPTERS, EMPLOYMENT_STATUSES, INDUSTRIES, PROGRAMMES, REGIONS } from "../lib/constants";
 
 const FIRST_NAMES = ["Ama", "Kwame", "Esi", "Kofi", "Abena", "Yaw", "Akosua", "Kojo", "Efua", "Kwesi", "Adwoa", "Nana", "Fiifi", "Maame", "Selorm", "Dela", "Zainab", "Ibrahim", "Mariam", "Yakubu"];
 const LAST_NAMES = ["Mensah", "Owusu", "Boateng", "Asante", "Appiah", "Quaye", "Tetteh", "Agyeman", "Danso", "Ofori", "Amoah", "Adjei", "Sarpong", "Nkrumah", "Abdulai", "Kuffour", "Darko", "Annan"];
@@ -25,8 +25,8 @@ function main() {
     return;
   }
   const insert = d.prepare(`INSERT OR IGNORE INTO alumni
-    (id,name,name_key,gender,year,prog,phone,email,region,city,employer,title,industry,chapter,consent,verified,submitted_at,verified_at,sample)
-    VALUES (@id,@name,@name_key,@gender,@year,@prog,@phone,@email,@region,@city,@employer,@title,@industry,@chapter,1,@verified,@submitted,@verifiedAt,1)`);
+    (id,honorific,name,name_key,gender,year,prog,phone,email,region,city,employment,employer,title,industry,chapter,consent,verified,submitted_at,verified_at,sample)
+    VALUES (@id,@honorific,@name,@name_key,@gender,@year,@prog,@phone,@email,@region,@city,@employment,@employer,@title,@industry,@chapter,1,@verified,@submitted,@verifiedAt,1)`);
   let added = 0;
   d.transaction(() => {
     for (let i = 0; i < 28; i++) {
@@ -38,10 +38,10 @@ function main() {
       const submitted = new Date(Date.now() - ((i * 13) % 330) * 86400_000).toISOString();
       const verified = i % 3 !== 0;
       added += insert.run({
-        id: randomUUID(), name, name_key: name.toLowerCase(), gender: i % 2 ? "Male" : "Female",
+        id: randomUUID(), honorific: i % 5 === 0 ? "Dr" : i % 2 ? "Mr" : "Mrs", name, name_key: name.toLowerCase(), gender: i % 2 ? "Male" : "Female",
         year: SAMPLE_YEARS[(i * 3) % SAMPLE_YEARS.length], prog: PROGRAMMES[i % PROGRAMMES.length],
         phone: "024" + (4100000 + i * 37311).toString().slice(0, 7), email: `${fn}.${ln}@example.com`.toLowerCase(),
-        region, city: CAPITALS[region], employer: EMPLOYERS[ix], title: TITLES[ix], industry: INDUSTRIES[ix],
+        region, city: CAPITALS[region], employment: EMPLOYMENT_STATUSES[i % 3], employer: EMPLOYERS[ix], title: TITLES[ix], industry: INDUSTRIES[ix],
         chapter: CHAPTERS[rnd(i, CHAPTERS.length)], verified: verified ? 1 : 0, submitted, verifiedAt: verified ? submitted : null,
       }).changes;
     }

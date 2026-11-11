@@ -1,4 +1,6 @@
 export interface RegistrationInput {
+  /** Title before the name, e.g. "Dr". Picked from HONORIFICS or typed in. */
+  honorific: string;
   name: string;
   gender: string;
   year: number;
@@ -7,6 +9,8 @@ export interface RegistrationInput {
   email: string;
   region: string;
   city: string;
+  /** One of EMPLOYMENT_STATUSES. */
+  employment: string;
   employer: string;
   title: string;
   industry: string;

@@ -14,9 +14,12 @@ import {
 } from "@/app/components/Icons";
 import {
   CHAPTERS,
+  EMPLOYMENT_STATUSES,
   GENDERS,
+  HONORIFICS,
   INDUSTRIES,
   INTERNATIONAL_CHAPTER,
+  OTHER_HONORIFIC,
   OTHER_INDUSTRY,
   OTHER_REGION,
   PROGRAMMES,
@@ -33,6 +36,7 @@ type Values = Omit<Record<RegistrationField, string>, "consent"> & {
 };
 
 const EMPTY: Values = {
+  honorific: "",
   name: "",
   gender: "",
   year: "",
@@ -41,6 +45,7 @@ const EMPTY: Values = {
   email: "",
   region: "",
   city: "",
+  employment: "",
   employer: "",
   title: "",
   industry: "",
@@ -52,7 +57,7 @@ const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
   {
     title: "About You",
     sub: "Tell us who you are and when you were at ODASCO.",
-    fields: ["name", "gender", "year", "prog"],
+    fields: ["honorific", "name", "gender", "year", "prog"],
   },
   {
     title: "Contact & Location",
@@ -62,11 +67,12 @@ const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
   {
     title: "Work & Chapter",
     sub: "Your current work and the chapter you'd like to belong to.",
-    fields: ["employer", "title", "industry", "chapter", "consent"],
+    fields: ["employment", "employer", "title", "industry", "chapter", "consent"],
   },
 ];
 
 const LABELS: Record<RegistrationField, string> = {
+  honorific: "Title",
   name: "Full Name",
   gender: "Gender",
   year: "Year Group",
@@ -75,6 +81,7 @@ const LABELS: Record<RegistrationField, string> = {
   email: "Email Address",
   region: "Region",
   city: "City/Town",
+  employment: "Employment Status",
   employer: "Employer",
   title: "Job Title",
   industry: "Industry",
@@ -90,6 +97,8 @@ export default function RegisterPage() {
   const [otherIndustry, setOtherIndustry] = useState(false);
   // "Other" region chosen: the text box holds the region itself.
   const [otherRegion, setOtherRegion] = useState(false);
+  // "Other" title chosen: the text box holds the title itself.
+  const [otherHonorific, setOtherHonorific] = useState(false);
   // Country typed for the International chapter, kept as typed so spaces work while typing.
   const [country, setCountry] = useState("");
   const international = chapterGroup(values.chapter) === INTERNATIONAL_CHAPTER;
@@ -250,7 +259,7 @@ export default function RegisterPage() {
   // A dropdown where one choice (`other.choice`) opens a text box underneath for typing in.
   // While the box is open it takes the field's name, so "fix this" focus lands on the box.
   const selectOrType = (
-    f: "industry" | "chapter" | "region",
+    f: "industry" | "chapter" | "region" | "honorific",
     list: string[],
     placeholder: string,
     other: {
@@ -353,6 +362,7 @@ export default function RegisterPage() {
                   setValues(EMPTY);
                   setOtherIndustry(false);
                   setOtherRegion(false);
+                  setOtherHonorific(false);
                   setCountry("");
                   setTouched(new Set());
                   setStep(0);
@@ -405,12 +415,33 @@ export default function RegisterPage() {
               {step === 0 && (
                 <div className="fields">
                   {field(
+                    "honorific",
+                    selectOrType(
+                      "honorific",
+                      [...HONORIFICS, OTHER_HONORIFIC],
+                      "Select title…",
+                      {
+                        choice: OTHER_HONORIFIC,
+                        open: otherHonorific,
+                        pick: (v) => {
+                          const other = v === OTHER_HONORIFIC;
+                          setOtherHonorific(other);
+                          set("honorific", other ? "" : v);
+                        },
+                        value: values.honorific,
+                        onType: (s) => set("honorific", s),
+                        label: "Your title",
+                        placeholder: "Type your title, e.g. Eng.",
+                      },
+                    ),
+                    otherHonorific ? { help: "Type the title you use." } : {},
+                  )}
+                  {field(
                     "name",
                     text("name", {
                       autoComplete: "name",
                       placeholder: "e.g. Ama Mensah",
                     }),
-                    { full: true },
                   )}
                   {field("gender", select("gender", GENDERS, "Select…"))}
                   {field("year", select("year", yearGroups(), "Select year…"), {
@@ -493,6 +524,11 @@ export default function RegisterPage() {
                 <div className="stack">
                   <div className="fields">
                     {field(
+                      "employment",
+                      select("employment", EMPLOYMENT_STATUSES, "Select status…"),
+                      { full: true },
+                    )}
+                    {field(
                       "employer",
                       text("employer", {
                         autoComplete: "organization",
@@ -570,6 +606,7 @@ export default function RegisterPage() {
                     <dl className="review">
                       {(
                         [
+                          "honorific",
                           "name",
                           "year",
                           "prog",

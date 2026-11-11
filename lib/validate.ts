@@ -1,5 +1,6 @@
 import {
-  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, OTHER_REGION, PROGRAMMES, REGIONS,
+  CHAPTERS, EMPLOYMENT_STATUSES, GENDERS, HONORIFICS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_HONORIFIC, OTHER_INDUSTRY,
+  OTHER_REGION, PROGRAMMES, REGIONS,
   chapterCountry, chapterGroup, internationalChapter, yearGroups,
 } from "./constants";
 import type { RegistrationField, RegistrationInput } from "./types";
@@ -16,6 +17,7 @@ export type FieldErrors = Partial<Record<RegistrationField, string>>;
 /** Turns raw form/JSON input into a clean record. Never throws. */
 export function normalise(raw: Record<string, unknown>): RegistrationInput {
   return {
+    honorific: str(raw.honorific, 30),
     name: str(raw.name, 100),
     gender: str(raw.gender),
     year: Number(raw.year),
@@ -24,6 +26,7 @@ export function normalise(raw: Record<string, unknown>): RegistrationInput {
     email: str(raw.email, 120).toLowerCase(),
     region: str(raw.region, 60),
     city: str(raw.city, 80),
+    employment: str(raw.employment),
     employer: str(raw.employer, 120),
     title: str(raw.title, 120),
     industry: str(raw.industry, 60),
@@ -35,6 +38,19 @@ export function normalise(raw: Record<string, unknown>): RegistrationInput {
 /** Field-by-field checks. Shared by the registration form, the admin editor and the API. */
 export function fieldErrors(v: RegistrationInput, opts: { requireConsent?: boolean } = {}): FieldErrors {
   const e: FieldErrors = {};
+  // Admin edits (requireConsent: false) may leave title and employment blank: records from before
+  // those fields existed don't have them. New registrations must fill both in.
+  const isAdminEdit = opts.requireConsent === false;
+  if (v.honorific || !isAdminEdit) {
+    if (!HONORIFICS.includes(v.honorific)) {
+      // Not a listed title, so it must be one typed in after choosing "Other".
+      if (v.honorific.length < 2 || v.honorific.toLowerCase() === OTHER_HONORIFIC.toLowerCase())
+        e.honorific = "Choose your title, or choose Other and type yours.";
+      else if (!TYPED.test(v.honorific)) e.honorific = "Use letters only.";
+    }
+  }
+  if ((v.employment || !isAdminEdit) && !EMPLOYMENT_STATUSES.includes(v.employment))
+    e.employment = "Choose your employment status.";
   if (v.name.length < 3 || !/\s/.test(v.name)) e.name = "Enter your first and last name.";
   else if (!/^[\p{L}\p{M}' .-]+$/u.test(v.name)) e.name = "Use letters only.";
   if (!GENDERS.includes(v.gender)) e.gender = "Choose an option.";

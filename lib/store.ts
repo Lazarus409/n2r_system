@@ -3,14 +3,14 @@ import { db } from "./db";
 import type { Alumnus, AuditEntry, RegistrationInput } from "./types";
 
 type Row = {
-  id: string; name: string; gender: string; year: number; prog: string; phone: string; email: string;
-  region: string; city: string; employer: string; title: string; industry: string; chapter: string;
+  id: string; honorific: string; name: string; gender: string; year: number; prog: string; phone: string; email: string;
+  region: string; city: string; employment: string; employer: string; title: string; industry: string; chapter: string;
   verified: number; submitted_at: string; verified_at: string | null; updated_at: string | null; notes: string; sample: number;
 };
 
 const toAlumnus = (r: Row): Alumnus => ({
-  id: r.id, name: r.name, gender: r.gender, year: r.year, prog: r.prog, phone: r.phone, email: r.email,
-  region: r.region, city: r.city, employer: r.employer, title: r.title, industry: r.industry, chapter: r.chapter,
+  id: r.id, honorific: r.honorific, name: r.name, gender: r.gender, year: r.year, prog: r.prog, phone: r.phone, email: r.email,
+  region: r.region, city: r.city, employment: r.employment, employer: r.employer, title: r.title, industry: r.industry, chapter: r.chapter,
   consent: true, verified: !!r.verified, submittedAt: r.submitted_at, verifiedAt: r.verified_at,
   updatedAt: r.updated_at, notes: r.notes, sample: !!r.sample || undefined,
 });
@@ -38,19 +38,19 @@ export function addAlumnus(v: RegistrationInput): AddResult {
   return d.transaction((): AddResult => {
     const key = v.name.toLowerCase();
     const existing = d.prepare("SELECT * FROM alumni WHERE name_key = ? AND year = ?").get(key, v.year) as Row | undefined;
-    const fields = { name: v.name, name_key: key, gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
-      region: v.region, city: v.city, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter };
+    const fields = { honorific: v.honorific, name: v.name, name_key: key, gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
+      region: v.region, city: v.city, employment: v.employment, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter };
     if (existing) {
       if (existing.verified) return { status: "duplicate" };
-      d.prepare(`UPDATE alumni SET name=@name, name_key=@name_key, gender=@gender, prog=@prog, phone=@phone, email=@email, region=@region,
-        city=@city, employer=@employer, title=@title, industry=@industry, chapter=@chapter, submitted_at=@at, updated_at=@at WHERE id=@id`)
+      d.prepare(`UPDATE alumni SET honorific=@honorific, name=@name, name_key=@name_key, gender=@gender, prog=@prog, phone=@phone, email=@email, region=@region,
+        city=@city, employment=@employment, employer=@employer, title=@title, industry=@industry, chapter=@chapter, submitted_at=@at, updated_at=@at WHERE id=@id`)
         .run({ ...fields, at: now(), id: existing.id });
       audit("member", "registration.updated", existing.id, `${v.name} (${v.year}) resubmitted their details`);
       return { status: "updated", record: getAlumnus(existing.id)! };
     }
     const id = randomUUID();
-    d.prepare(`INSERT INTO alumni (id,name,name_key,gender,year,prog,phone,email,region,city,employer,title,industry,chapter,consent,verified,submitted_at)
-      VALUES (@id,@name,@name_key,@gender,@year,@prog,@phone,@email,@region,@city,@employer,@title,@industry,@chapter,1,0,@at)`)
+    d.prepare(`INSERT INTO alumni (id,honorific,name,name_key,gender,year,prog,phone,email,region,city,employment,employer,title,industry,chapter,consent,verified,submitted_at)
+      VALUES (@id,@honorific,@name,@name_key,@gender,@year,@prog,@phone,@email,@region,@city,@employment,@employer,@title,@industry,@chapter,1,0,@at)`)
       .run({ ...fields, id, at: now() });
     audit("member", "registration.created", id, `${v.name} (${v.year}) registered`);
     return { status: "created", record: getAlumnus(id)! };
@@ -67,10 +67,10 @@ export function updateAlumnus(id: string, v: RegistrationInput | null, notes?: s
       const clash = d.prepare("SELECT id FROM alumni WHERE name_key = ? AND year = ? AND id != ?").get(v.name.toLowerCase(), v.year, id);
       if (clash) return "conflict" as const;
       const changed = (Object.keys(v) as (keyof RegistrationInput)[]).filter((k) => k !== "consent" && String(cur[k as keyof Alumnus]) !== String(v[k]));
-      d.prepare(`UPDATE alumni SET name=@name, name_key=@name_key, gender=@gender, year=@year, prog=@prog, phone=@phone, email=@email, region=@region,
-        city=@city, employer=@employer, title=@title, industry=@industry, chapter=@chapter, updated_at=@at WHERE id=@id`)
-        .run({ name: v.name, name_key: v.name.toLowerCase(), gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
-          region: v.region, city: v.city, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter, at: now(), id });
+      d.prepare(`UPDATE alumni SET honorific=@honorific, name=@name, name_key=@name_key, gender=@gender, year=@year, prog=@prog, phone=@phone, email=@email, region=@region,
+        city=@city, employment=@employment, employer=@employer, title=@title, industry=@industry, chapter=@chapter, updated_at=@at WHERE id=@id`)
+        .run({ honorific: v.honorific, name: v.name, name_key: v.name.toLowerCase(), gender: v.gender, year: v.year, prog: v.prog, phone: v.phone, email: v.email,
+          region: v.region, city: v.city, employment: v.employment, employer: v.employer, title: v.title, industry: v.industry, chapter: v.chapter, at: now(), id });
       if (changed.length) audit("admin", "record.edited", id, `Edited ${v.name}: ${changed.join(", ")}`);
     }
     if (notes !== undefined && notes !== cur.notes) {

@@ -19,8 +19,8 @@ export const fullDate = (iso?: string | null) =>
 
 export function downloadCsv(rows: Alumnus[], filename: string) {
   const cols: [keyof Alumnus, string][] = [
-    ["name", "Full name"], ["gender", "Gender"], ["year", "Year group"], ["prog", "Programme"], ["phone", "Phone"], ["email", "Email"],
-    ["region", "Region"], ["city", "City"], ["employer", "Employer"], ["title", "Job title"], ["industry", "Industry"],
+    ["honorific", "Title"], ["name", "Full name"], ["gender", "Gender"], ["year", "Year group"], ["prog", "Programme"], ["phone", "Phone"], ["email", "Email"],
+    ["region", "Region"], ["city", "City"], ["employment", "Employment status"], ["employer", "Employer"], ["title", "Job title"], ["industry", "Industry"],
     ["chapter", "Chapter"], ["verified", "Verified"], ["submittedAt", "Registered"], ["verifiedAt", "Verified on"], ["notes", "Notes"],
   ];
   const cell = (v: unknown) => {
