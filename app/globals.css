@@ -426,3 +426,100 @@ html:not(.no-splash) body { overflow: hidden; }
   .splash-ring, .splash-logo::before, .splash-bar i { animation: none; }
   .splash-bar i { width: 100%; }
 }
+
+/* =========================================================================
+   Registration page look: drifting blurred green/yellow background,
+   frosted-glass form card with a green glow, and glass (iOS-style) buttons.
+   Scoped to main.register so the admin dashboard is unchanged.
+   ========================================================================= */
+:root {
+  --aurora-opacity: .55;
+  --glass: rgba(255, 255, 255, .62);
+  --glass-edge: rgba(255, 255, 255, .75);
+  --glass-hi: rgba(255, 255, 255, .9);
+  --glass-btn: rgba(255, 255, 255, .45);
+  --glow: rgba(11, 122, 7, .32);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --aurora-opacity: .38;
+    --glass: rgba(19, 35, 14, .62);
+    --glass-edge: rgba(130, 220, 115, .22);
+    --glass-hi: rgba(255, 255, 255, .18);
+    --glass-btn: rgba(255, 255, 255, .08);
+    --glow: rgba(92, 201, 79, .34);
+  }
+}
+:root[data-theme="dark"] {
+  --aurora-opacity: .38;
+  --glass: rgba(19, 35, 14, .62);
+  --glass-edge: rgba(130, 220, 115, .22);
+  --glass-hi: rgba(255, 255, 255, .18);
+  --glass-btn: rgba(255, 255, 255, .08);
+  --glow: rgba(92, 201, 79, .34);
+}
+
+main.register { position: relative; isolation: isolate; overflow: clip; min-height: calc(100dvh - 110px); }
+
+/* Background: four big soft blobs, blurred into one moving sheet of colour. */
+.aurora { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: var(--aurora-opacity); filter: blur(70px) saturate(1.2); }
+.aurora i { position: absolute; display: block; border-radius: 50%; will-change: transform; }
+.aurora i:nth-child(1) { width: 60vmax; height: 60vmax; left: -18vmax; top: -12vmax; background: radial-gradient(circle, #1fa318 0%, transparent 65%); animation: drift1 22s ease-in-out infinite alternate; }
+.aurora i:nth-child(2) { width: 50vmax; height: 50vmax; right: -16vmax; top: 8vmax; background: radial-gradient(circle, #fddb1a 0%, transparent 62%); animation: drift2 26s ease-in-out infinite alternate; }
+.aurora i:nth-child(3) { width: 55vmax; height: 55vmax; left: 10vmax; bottom: -26vmax; background: radial-gradient(circle, #0b7a07 0%, transparent 65%); animation: drift3 30s ease-in-out infinite alternate; }
+.aurora i:nth-child(4) { width: 34vmax; height: 34vmax; left: 30vmax; top: 18vmax; background: radial-gradient(circle, #9be15d 0%, transparent 62%); animation: drift4 18s ease-in-out infinite alternate; }
+@keyframes drift1 { to { transform: translate(14vmax, 10vmax) scale(1.15); } }
+@keyframes drift2 { to { transform: translate(-16vmax, 12vmax) scale(.9); } }
+@keyframes drift3 { to { transform: translate(12vmax, -14vmax) scale(1.1); } }
+@keyframes drift4 { to { transform: translate(-12vmax, -8vmax) scale(1.25); } }
+
+/* Form card: frosted glass with a soft green glow around the border. */
+main.register .card {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid var(--glass-edge); border-radius: 22px;
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px color-mix(in srgb, var(--green) 30%, transparent),
+    0 0 28px var(--glow), 0 0 80px -10px var(--glow), var(--shadow-lg);
+  animation: glow 6s ease-in-out infinite alternate;
+}
+@keyframes glow {
+  to { box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 1px color-mix(in srgb, var(--green) 45%, transparent),
+    0 0 40px var(--glow), 0 0 120px -6px var(--glow), var(--shadow-lg); }
+}
+/* Fields and the review box sit on the glass slightly translucent too. */
+main.register input, main.register select { background-color: color-mix(in srgb, var(--surface) 82%, transparent); }
+main.register .review, main.register .check { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+main.register .form-nav { border-top-color: color-mix(in srgb, var(--line) 70%, transparent); }
+
+/* Buttons: rounded glass pills with a top highlight, iOS style. */
+main.register .btn {
+  border-radius: 999px; padding: 0 20px; border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: blur(14px) saturate(1.8); backdrop-filter: blur(14px) saturate(1.8);
+  transition: transform .18s cubic-bezier(.2, .9, .3, 1.3), box-shadow .2s, background .2s, filter .2s;
+}
+main.register .btn:hover { transform: translateY(-1px); }
+main.register .btn:active { transform: scale(.96); }
+main.register .btn:disabled { transform: none; }
+/* Main action: green tinted glass. */
+main.register .btn:not(.secondary):not(.ghost) {
+  color: #fff; border-color: rgba(255, 255, 255, .35);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green) 62%, #fff) 0%, color-mix(in srgb, var(--green) 85%, transparent) 55%, color-mix(in srgb, var(--green) 92%, #000) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6), inset 0 -2px 6px rgba(0, 0, 0, .15), 0 8px 24px var(--glow);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .25);
+}
+main.register .btn:not(.secondary):not(.ghost):hover { filter: brightness(1.06); box-shadow: inset 0 1px 1px rgba(255, 255, 255, .7), inset 0 -2px 6px rgba(0, 0, 0, .15), 0 10px 32px var(--glow); }
+/* Back / secondary: clear glass. */
+main.register .btn.secondary, main.register .btn.ghost {
+  color: var(--ink); background: var(--glass-btn);
+  box-shadow: inset 0 1px 1px var(--glass-hi), 0 4px 14px rgba(0, 0, 0, .08);
+}
+main.register .btn.secondary:hover, main.register .btn.ghost:hover { background: color-mix(in srgb, var(--glass-btn) 70%, var(--green-soft)); border-color: color-mix(in srgb, var(--green) 40%, var(--glass-edge)); }
+
+/* No drifting or pulsing for people who turn motion off. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora i, main.register .card { animation: none; }
+}
+/* Browsers without backdrop blur: fall back to solid surfaces so text stays readable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  main.register .card { background: var(--surface); }
+}

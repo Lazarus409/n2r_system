@@ -334,7 +334,14 @@ export default function RegisterPage() {
         </div>
       </header>
 
-      <main className="page">
+      <main className="page register">
+        {/* Slow-moving blurred green and yellow background (styles in globals.css, "Registration page look"). */}
+        <div className="aurora" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
         <div className="wrap narrow">
           {done ? (
             <section className="card success-hero" aria-live="polite">
