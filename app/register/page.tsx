@@ -62,16 +62,16 @@ const STEPS: { title: string; sub: string; fields: RegistrationField[] }[] = [
 ];
 
 const LABELS: Record<RegistrationField, string> = {
-  name: "Full name",
+  name: "Full Name",
   gender: "Gender",
   year: "Year Group",
   prog: "Programme",
-  phone: "Phone number",
-  email: "Email address",
+  phone: "Phone Number",
+  email: "Email Address",
   region: "Region",
-  city: "City or town",
+  city: "City or Town",
   employer: "Employer",
-  title: "Job title",
+  title: "Job Title",
   industry: "Industry",
   chapter: "Chapter",
   consent: "Consent",
