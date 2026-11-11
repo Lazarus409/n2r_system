@@ -1,7 +1,15 @@
-import { CHAPTERS, GENDERS, INDUSTRIES, PROGRAMMES, REGIONS, yearGroups } from "./constants";
+import {
+  CHAPTERS, GENDERS, INDUSTRIES, INTERNATIONAL_CHAPTER, OTHER_INDUSTRY, PROGRAMMES, REGIONS,
+  chapterCountry, chapterGroup, internationalChapter, yearGroups,
+} from "./constants";
 import type { RegistrationField, RegistrationInput } from "./types";
 
 const str = (v: unknown, max = 120) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, max);
+/** Allowed characters for things people type in themselves (an industry or a country). */
+const TYPED = /^[\p{L}\p{M}\p{N}&' .,/()-]+$/u;
+/** Tidies "International ( canada )" into "International (canada)". Other chapters are unchanged. */
+const cleanChapter = (c: string) =>
+  chapterGroup(c) === INTERNATIONAL_CHAPTER && c !== INTERNATIONAL_CHAPTER ? internationalChapter(chapterCountry(c)) : c;
 
 export type FieldErrors = Partial<Record<RegistrationField, string>>;
 
@@ -18,8 +26,8 @@ export function normalise(raw: Record<string, unknown>): RegistrationInput {
     city: str(raw.city, 80),
     employer: str(raw.employer, 120),
     title: str(raw.title, 120),
-    industry: str(raw.industry),
-    chapter: str(raw.chapter),
+    industry: str(raw.industry, 60),
+    chapter: cleanChapter(str(raw.chapter, 80)),
     consent: raw.consent === true || raw.consent === "on" || raw.consent === "true",
   };
 }
@@ -36,8 +44,17 @@ export function fieldErrors(v: RegistrationInput, opts: { requireConsent?: boole
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) e.email = "Enter a valid email address.";
   if (!REGIONS.includes(v.region)) e.region = "Choose your region.";
   if (v.city.length < 2) e.city = "Enter your city or town.";
-  if (!INDUSTRIES.includes(v.industry)) e.industry = "Choose an industry.";
-  if (!CHAPTERS.includes(v.chapter)) e.chapter = "Choose a chapter.";
+  if (!INDUSTRIES.includes(v.industry)) {
+    // Not a listed industry, so it must be one typed in after choosing "Other".
+    if (v.industry.length < 2 || v.industry.toLowerCase() === OTHER_INDUSTRY.toLowerCase())
+      e.industry = "Choose an industry, or choose Other and type yours.";
+    else if (!TYPED.test(v.industry)) e.industry = "Use letters and numbers only.";
+  }
+  if (chapterGroup(v.chapter) === INTERNATIONAL_CHAPTER) {
+    const country = chapterCountry(v.chapter);
+    if (country.length < 2) e.chapter = "Type the country you live in.";
+    else if (!TYPED.test(country)) e.chapter = "Use letters only for the country.";
+  } else if (!CHAPTERS.includes(v.chapter)) e.chapter = "Choose a chapter.";
   if (opts.requireConsent !== false && !v.consent) e.consent = "Please give consent so we can add you to the register.";
   return e;
 }

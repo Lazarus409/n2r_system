@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Alumnus } from "@/lib/types";
+import { INTERNATIONAL_CHAPTER, chapterCountry, chapterGroup } from "@/lib/constants";
 
 type Datum = { label: string; value: number; hint?: string };
 
@@ -125,10 +126,14 @@ export default function Reports({ data }: { data: Alumnus[] }) {
 
   const groups: [string, string, Datum[]][] = [
     ["Alumni by region", "Where members live now", count(data, (a) => a.region)],
-    ["Alumni by chapter", "Chapter membership", count(data, (a) => a.chapter)],
+    ["Alumni by chapter", "Chapter membership", count(data, (a) => chapterGroup(a.chapter))],
     ["Alumni by industry", "Current sector of work", count(data, (a) => a.industry)],
     ["Alumni by programme", "Programme studied at ODASCO", count(data, (a) => a.prog)],
   ];
+  const abroad = data.filter((a) => chapterGroup(a.chapter) === INTERNATIONAL_CHAPTER);
+  if (abroad.length)
+    groups.push(["International members by country", "Countries typed in by International chapter members",
+      count(abroad, (a) => chapterCountry(a.chapter) || "Not given")]);
 
   return (
     <div className="stack">

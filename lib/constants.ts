@@ -28,6 +28,10 @@ export const INDUSTRIES = [
   "Media",
   "Trade",
 ];
+/** Extra industry choice. People who pick it type their own industry, and what they type is saved. */
+export const OTHER_INDUSTRY = "Other";
+/** True for an industry someone typed in, i.e. one that isn't in INDUSTRIES. */
+export const isOtherIndustry = (industry: string) => !!industry && !INDUSTRIES.includes(industry);
 export const CHAPTERS = [
   "Accra",
   "Kumasi",
@@ -37,6 +41,20 @@ export const CHAPTERS = [
   "Tamale",
   "International",
 ];
+/**
+ * People who choose the International chapter also type their country.
+ * It is saved in the chapter itself as "International (Canada)".
+ */
+export const INTERNATIONAL_CHAPTER = "International";
+export const internationalChapter = (country: string) => `${INTERNATIONAL_CHAPTER} (${country})`;
+/** "International (Canada)" -> "Canada". Anything else -> "". */
+export function chapterCountry(chapter: string) {
+  const m = /^International \((.*)\)$/.exec(chapter);
+  return m ? m[1].trim() : "";
+}
+/** The chapter without the country: "International (Canada)" -> "International". */
+export const chapterGroup = (chapter: string) =>
+  chapter.startsWith(`${INTERNATIONAL_CHAPTER} (`) ? INTERNATIONAL_CHAPTER : chapter;
 export const PROGRAMMES = [
   "General Arts",
   "General Science",
